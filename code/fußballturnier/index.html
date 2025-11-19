@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spielverwaltung</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Spielverwaltung</h1>
+  </header>
+
+  <main>
+    <div id="adminCheck">
+      <label for="adminToggle">Als Admin anmelden</label>
+      <input type="checkbox" id="adminToggle" />
+    </div>
+
+    <section id="spielForm">
+      <h2>Neues Spiel anlegen</h2>
+      <input type="date" id="spielDatum" />
+      <input type="time" id="spielUhrzeit" />
+      <input type="text" id="spielPlatz" placeholder="Platz" />
+      <input type="text" id="spielSchiri" placeholder="Schiedsrichter" />
+      <button onclick="spielSpeichern()">Spiel speichern</button>
+    </section>
+
+    <section id="spielListe">
+      <h2>Alle Spiele</h2>
+      <ul id="spiele"></ul>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
