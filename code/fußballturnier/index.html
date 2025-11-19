@@ -25,10 +25,9 @@
   <h2>Registrieren</h2>
   <input type="text" id="regUsername" placeholder="Neuer Benutzername" />
   <input type="password" id="regPassword" placeholder="Neues Passwort" />
-  <select id="regRole">
-    <option value="viewer">Viewer</option>
-    <option value="admin">Admin</option>
-  </select>
+  <input type="hidden" id="regRole" value="viewer" />
+
+
   <button onclick="register()">Benutzer anlegen</button>
   <p id="registerMessage" style="color: green;"></p>
 </div>
@@ -38,6 +37,15 @@
       ✅ Angemeldet als Admin
       <button onclick="logout()">Logout</button>
     </div>
+
+    <div id="adminTools" style="display: none;">
+  <h3>Neuen Admin anlegen (nur für eingeloggte Admins)</h3>
+  <input type="text" id="adminName" placeholder="Benutzername" />
+  <input type="password" id="adminPass" placeholder="Passwort" />
+  <button onclick="createAdmin()">Admin hinzufügen</button>
+  <p id="adminMsg"></p>
+</div>
+
 
     <!-- Spielverwaltung -->
     <section id="spielForm">

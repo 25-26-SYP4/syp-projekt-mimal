@@ -14,10 +14,12 @@ if (!localStorage.getItem("users")) {
 window.onload = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   if (user && user.role === "admin") {
-    isAdmin = true;
-    document.getElementById("loginForm").style.display = "none";
-    document.getElementById("adminStatus").style.display = "block";
-  }
+  isAdmin = true;
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("adminStatus").style.display = "block";
+  document.getElementById("adminTools").style.display = "block";
+}
+
 };
 
 function login() {
@@ -51,7 +53,7 @@ function logout() {
 function register() {
   const username = document.getElementById("regUsername").value.trim();
   const password = document.getElementById("regPassword").value;
-  const role = document.getElementById("regRole").value;
+  const role = "viewer"; // Erzwingen
 
   if (!username || !password) {
     document.getElementById("registerMessage").style.color = "red";
@@ -71,8 +73,9 @@ function register() {
   localStorage.setItem("users", JSON.stringify(users));
 
   document.getElementById("registerMessage").style.color = "green";
-  document.getElementById("registerMessage").textContent = `Benutzer "${username}" wurde angelegt.`;
+  document.getElementById("registerMessage").textContent = `Benutzer "${username}" wurde als viewer registriert.`;
 }
+
 
 function spielSpeichern() {
   if (!isAdmin) {
@@ -112,6 +115,28 @@ function renderSpiele() {
     liste.appendChild(li);
   });
 }
+
+function createAdmin() {
+  const name = document.getElementById("adminName").value;
+  const pass = document.getElementById("adminPass").value;
+
+  if (!name || !pass) {
+    document.getElementById("adminMsg").textContent = "Bitte alles ausfüllen!";
+    return;
+  }
+
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+
+  if (users.find(u => u.username === name)) {
+    document.getElementById("adminMsg").textContent = "Benutzer existiert bereits!";
+    return;
+  }
+
+  users.push({ username: name, password: pass, role: "admin" });
+  localStorage.setItem("users", JSON.stringify(users));
+  document.getElementById("adminMsg").textContent = `Admin "${name}" wurde erstellt.`;
+}
+
 
 function resetForm() {
   document.getElementById("spielDatum").value = "";
