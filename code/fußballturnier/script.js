@@ -1,11 +1,14 @@
 const spiele = [];
 let isAdmin = false;
 
-// Beispiel-Userliste
-const users = [
-  { username: "admin", password: "123", role: "admin" },
-  { username: "gast", password: "456", role: "viewer" }
-];
+// Beim ersten Laden Standard-User nur einmal anlegen
+if (!localStorage.getItem("users")) {
+  const defaultUsers = [
+    { username: "admin", password: "123", role: "admin" },
+    { username: "gast", password: "456", role: "viewer" }
+  ];
+  localStorage.setItem("users", JSON.stringify(defaultUsers));
+}
 
 // Beim Laden prüfen ob eingeloggt
 window.onload = () => {
@@ -20,6 +23,8 @@ window.onload = () => {
 function login() {
   const u = document.getElementById("username").value;
   const p = document.getElementById("password").value;
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+
   const user = users.find(uObj => uObj.username === u && uObj.password === p);
 
   if (!user) {
@@ -41,6 +46,32 @@ function login() {
 function logout() {
   localStorage.removeItem("user");
   location.reload();
+}
+
+function register() {
+  const username = document.getElementById("regUsername").value.trim();
+  const password = document.getElementById("regPassword").value;
+  const role = document.getElementById("regRole").value;
+
+  if (!username || !password) {
+    document.getElementById("registerMessage").style.color = "red";
+    document.getElementById("registerMessage").textContent = "Bitte alles ausfüllen!";
+    return;
+  }
+
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+
+  if (users.find(u => u.username === username)) {
+    document.getElementById("registerMessage").style.color = "red";
+    document.getElementById("registerMessage").textContent = "Benutzer existiert bereits!";
+    return;
+  }
+
+  users.push({ username, password, role });
+  localStorage.setItem("users", JSON.stringify(users));
+
+  document.getElementById("registerMessage").style.color = "green";
+  document.getElementById("registerMessage").textContent = `Benutzer "${username}" wurde angelegt.`;
 }
 
 function spielSpeichern() {

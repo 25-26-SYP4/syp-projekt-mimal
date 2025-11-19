@@ -14,12 +14,24 @@
   <main>
     <!-- Login-Bereich -->
     <div id="loginForm">
-      <h2>Login</h2>
-      <input type="text" id="username" placeholder="Benutzername" />
-      <input type="password" id="password" placeholder="Passwort" />
-      <button onclick="login()">Anmelden</button>
-      <p id="loginMessage" style="color: red;"></p>
-    </div>
+  <h2>Login</h2>
+  <input type="text" id="username" placeholder="Benutzername" />
+  <input type="password" id="password" placeholder="Passwort" />
+  <button onclick="login()">Anmelden</button>
+  <p id="loginMessage" style="color: red;"></p>
+
+  <hr />
+
+  <h2>Registrieren</h2>
+  <input type="text" id="regUsername" placeholder="Neuer Benutzername" />
+  <input type="password" id="regPassword" placeholder="Neues Passwort" />
+  <select id="regRole">
+    <option value="viewer">Viewer</option>
+    <option value="admin">Admin</option>
+  </select>
+  <button onclick="register()">Benutzer anlegen</button>
+  <p id="registerMessage" style="color: green;"></p>
+</div>
 
     <!-- Info nach Login -->
     <div id="adminStatus" style="display:none;">
