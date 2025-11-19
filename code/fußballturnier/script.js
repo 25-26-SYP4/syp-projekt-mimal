@@ -1,9 +1,47 @@
 const spiele = [];
 let isAdmin = false;
 
-document.getElementById("adminToggle").addEventListener("change", function () {
-  isAdmin = this.checked;
-});
+// Beispiel-Userliste
+const users = [
+  { username: "admin", password: "123", role: "admin" },
+  { username: "gast", password: "456", role: "viewer" }
+];
+
+// Beim Laden prüfen ob eingeloggt
+window.onload = () => {
+  const user = JSON.parse(localStorage.getItem("user"));
+  if (user && user.role === "admin") {
+    isAdmin = true;
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("adminStatus").style.display = "block";
+  }
+};
+
+function login() {
+  const u = document.getElementById("username").value;
+  const p = document.getElementById("password").value;
+  const user = users.find(uObj => uObj.username === u && uObj.password === p);
+
+  if (!user) {
+    document.getElementById("loginMessage").textContent = "Login fehlgeschlagen!";
+    return;
+  }
+
+  if (user.role !== "admin") {
+    document.getElementById("loginMessage").textContent = "Nur Admins erlaubt!";
+    return;
+  }
+
+  isAdmin = true;
+  localStorage.setItem("user", JSON.stringify(user));
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("adminStatus").style.display = "block";
+}
+
+function logout() {
+  localStorage.removeItem("user");
+  location.reload();
+}
 
 function spielSpeichern() {
   if (!isAdmin) {
@@ -37,7 +75,7 @@ function renderSpiele() {
   const liste = document.getElementById("spiele");
   liste.innerHTML = "";
 
-  spiele.forEach((spiel, index) => {
+  spiele.forEach(spiel => {
     const li = document.createElement("li");
     li.textContent = `${spiel.datum} ${spiel.uhrzeit} | Platz: ${spiel.platz} | SR: ${spiel.schiri}`;
     liste.appendChild(li);

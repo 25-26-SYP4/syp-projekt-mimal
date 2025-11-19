@@ -12,11 +12,22 @@
   </header>
 
   <main>
-    <div id="adminCheck">
-      <label for="adminToggle">Als Admin anmelden</label>
-      <input type="checkbox" id="adminToggle" />
+    <!-- Login-Bereich -->
+    <div id="loginForm">
+      <h2>Login</h2>
+      <input type="text" id="username" placeholder="Benutzername" />
+      <input type="password" id="password" placeholder="Passwort" />
+      <button onclick="login()">Anmelden</button>
+      <p id="loginMessage" style="color: red;"></p>
     </div>
 
+    <!-- Info nach Login -->
+    <div id="adminStatus" style="display:none;">
+      ✅ Angemeldet als Admin
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Spielverwaltung -->
     <section id="spielForm">
       <h2>Neues Spiel anlegen</h2>
       <input type="date" id="spielDatum" />
