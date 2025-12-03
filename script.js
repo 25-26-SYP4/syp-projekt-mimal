@@ -4,7 +4,28 @@ const users = [
 ];
 
 let currentUser = null;
-const spiele = [];
+let spiele = [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  const gespeicherteSpiele = localStorage.getItem("spiele");
+  if (gespeicherteSpiele) {
+    spiele = JSON.parse(gespeicherteSpiele);
+    renderSpiele();
+  }
+
+  const gespeicherterUser = localStorage.getItem("currentUser");
+  if (gespeicherterUser) {
+    currentUser = JSON.parse(gespeicherterUser);
+    handleLoginSuccess();
+  }
+
+  document.getElementById("password").addEventListener("keydown", e => {
+    if (e.key === "Enter") login();
+  });
+  document.getElementById("spielSchiri").addEventListener("keydown", e => {
+    if (e.key === "Enter") spielSpeichern();
+  });
+});
 
 function login() {
   const username = document.getElementById("username").value;
@@ -14,13 +35,29 @@ function login() {
   const user = users.find(u => u.username === username && u.password === password);
   if (user) {
     currentUser = user;
-    status.textContent = "Erfolgreich eingeloggt als " + user.username;
-    if (user.role === "admin") {
-      document.getElementById("spielForm").classList.remove("hidden");
-    }
+    localStorage.setItem("currentUser", JSON.stringify(user));
+    handleLoginSuccess();
+    status.textContent = "Eingeloggt als " + user.username;
   } else {
     status.textContent = "Login fehlgeschlagen.";
   }
+}
+
+function handleLoginSuccess() {
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("logoutBtn").classList.remove("hidden");
+  if (currentUser.role === "admin") {
+    document.getElementById("spielForm").classList.remove("hidden");
+  }
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem("currentUser");
+  document.getElementById("login").classList.remove("hidden");
+  document.getElementById("spielForm").classList.add("hidden");
+  document.getElementById("logoutBtn").classList.add("hidden");
+  document.getElementById("loginStatus").textContent = "";
 }
 
 function spielSpeichern() {
@@ -35,7 +72,7 @@ function spielSpeichern() {
   const schiri = document.getElementById("spielSchiri").value;
   const fehlermeldung = document.getElementById("fehlermeldung");
 
-  if (!datum || !uhrzeit || !platz || !schiri) {        
+  if (!datum || !uhrzeit || !platz || !schiri) {
     fehlermeldung.textContent = "Eines der Felder (Datum, Uhrzeit, Platz, Schiedsrichter) wurde nicht ausgefüllt";
     return;
   }
@@ -43,7 +80,8 @@ function spielSpeichern() {
   fehlermeldung.textContent = "";
 
   const neuesSpiel = { datum, uhrzeit, platz, schiri };
-  spiele.push(neuesSpiel);
+  spiele.unshift(neuesSpiel);
+  localStorage.setItem("spiele", JSON.stringify(spiele));
   renderSpiele();
   resetForm();
 }
