@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fußballturnier</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Fußballturnier Verwaltung</h1>
+    <button id="logoutBtn" class="hidden" onclick="logout()">Logout</button>
+  </header>
+
+  <main>
+    <section id="login">
+      <h2>Login</h2>
+      <input type="text" id="username" placeholder="Benutzername" />
+      <input type="password" id="password" placeholder="Passwort" />
+      <button onclick="login()">Login</button>
+      <p id="loginStatus"></p>
+    </section>
+
+    <section id="spielForm" class="hidden">
+      <h2>Neues Spiel anlegen</h2>
+      <input type="date" id="spielDatum" />
+      <input type="time" id="spielUhrzeit" />
+      <input type="text" id="spielPlatz" placeholder="Platz" />
+      <input type="text" id="spielSchiri" placeholder="Schiedsrichter" />
+      <button onclick="spielSpeichern()">Spiel speichern</button>
+      <p id="fehlermeldung"></p>
+    </section>
+
+    <section id="spielListe">
+      <h2>Alle Spiele</h2>
+      <ul id="spiele"></ul>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
