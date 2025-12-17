@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ergebniserfassung</title>
+    <link rel="stylesheet" href="ergebnisse.css" />
+</head>
+
+<body>
+    <header>
+        <h1>Ergebniserfassung</h1>
+    </header>
+
+    <main>
+        <section>
+            <h2>Spiel auswählen</h2>
+            <select id="spielAuswahl">
+            </select>
+        </section>
+
+        <section>
+            <h2>Ergebnis eintragen</h2>
+            <label>Team A Tore</label>
+            <input type="number" id="toreA" min="0" />
+
+            <label>Team B Tore</label>
+            <input type="number" id="toreB" min="0" />
+
+            <button onclick="ergebnisSpeichern()">Ergebnis speichern</button>
+            <p id="saveMsg"></p>
+        </section>
+    </main>
+
+    <script src="ergebnisse.js"></script>
+</body>
+
+</html>
