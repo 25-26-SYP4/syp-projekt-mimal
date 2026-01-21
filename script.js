@@ -23,7 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") login();
   });
   document.getElementById("spielSchiri").addEventListener("keydown", e => {
-    if (e.key === "Enter") spielSpeichern();
+    if (e.key === "Enter") {
+      if (currentUser?.role === "admin") spielSpeichern();
+      else if (currentUser?.role === "teamleader") ergebnisEintragen();
+    }
   });
 });
 
@@ -46,8 +49,12 @@ function login() {
 function handleLoginSuccess() {
   document.getElementById("login").classList.add("hidden");
   document.getElementById("logoutBtn").classList.remove("hidden");
+
   if (currentUser.role === "admin") {
     document.getElementById("spielForm").classList.remove("hidden");
+  } else if (currentUser.role === "teamleader") {
+    document.getElementById("ergebnisForm").classList.remove("hidden");
+    ladeSpieleInSelect();
   }
 }
 
@@ -56,16 +63,12 @@ function logout() {
   localStorage.removeItem("currentUser");
   document.getElementById("login").classList.remove("hidden");
   document.getElementById("spielForm").classList.add("hidden");
+  document.getElementById("ergebnisForm").classList.add("hidden");
   document.getElementById("logoutBtn").classList.add("hidden");
   document.getElementById("loginStatus").textContent = "";
 }
 
 function spielSpeichern() {
-  if (!currentUser || currentUser.role !== "admin") {
-    alert("Nur Admins dürfen Spiele anlegen!");
-    return;
-  }
-
   const datum = document.getElementById("spielDatum").value;
   const uhrzeit = document.getElementById("spielUhrzeit").value;
   const platz = document.getElementById("spielPlatz").value;
@@ -73,7 +76,7 @@ function spielSpeichern() {
   const fehlermeldung = document.getElementById("fehlermeldung");
 
   if (!datum || !uhrzeit || !platz || !schiri) {
-    fehlermeldung.textContent = "Eines der Felder (Datum, Uhrzeit, Platz, Schiedsrichter) wurde nicht ausgefüllt";
+    fehlermeldung.textContent = "Bitte alle Felder ausfüllen!";
     return;
   }
 
@@ -84,6 +87,7 @@ function spielSpeichern() {
   localStorage.setItem("spiele", JSON.stringify(spiele));
   renderSpiele();
   resetForm();
+  ladeSpieleInSelect(); // auch Teamleader-Dropdown aktualisieren
 }
 
 function renderSpiele() {
@@ -102,4 +106,35 @@ function resetForm() {
   document.getElementById("spielUhrzeit").value = "";
   document.getElementById("spielPlatz").value = "";
   document.getElementById("spielSchiri").value = "";
+}
+
+function ladeSpieleInSelect() {
+  const select = document.getElementById("spielAuswahl");
+  select.innerHTML = "";
+  spiele.forEach((spiel, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = `${spiel.datum} ${spiel.uhrzeit} | ${spiel.platz}`;
+    select.appendChild(opt);
+  });
+}
+
+function ergebnisEintragen() {
+  const index = document.getElementById("spielAuswahl").value;
+  const toreA = parseInt(document.getElementById("toreA").value);
+  const toreB = parseInt(document.getElementById("toreB").value);
+  const msg = document.getElementById("ergebnisMsg");
+
+  if (isNaN(toreA) || isNaN(toreB)) {
+    msg.textContent = "Beide Tore müssen eingetragen werden!";
+    msg.style.color = "red";
+    return;
+  }
+
+  spiele[index].toreA = toreA;
+  spiele[index].toreB = toreB;
+  localStorage.setItem("spiele", JSON.stringify(spiele));
+
+  msg.textContent = "Ergebnis gespeichert!";
+  msg.style.color = "green";
 }
