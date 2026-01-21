@@ -1,11 +1,13 @@
-const users = [
-  { username: "admin", password: "123", role: "admin" },
-  { username: "teamlead", password: "456", role: "teamleader" }
+// ===== Simuliertes Active Directory =====
+const activeDirectory = [
+  { email: "admin@schule.at", role: "admin" },
+  { email: "teamlead@schule.at", role: "teamleader" }
 ];
 
 let currentUser = null;
 let spiele = [];
 
+// ===== Initialisierung =====
 document.addEventListener("DOMContentLoaded", () => {
   const gespeicherteSpiele = localStorage.getItem("spiele");
   if (gespeicherteSpiele) {
@@ -19,60 +21,83 @@ document.addEventListener("DOMContentLoaded", () => {
     handleLoginSuccess();
   }
 
-  document.getElementById("password").addEventListener("keydown", e => {
-    if (e.key === "Enter") login();
-  });
-  document.getElementById("spielSchiri").addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      if (currentUser?.role === "admin") spielSpeichern();
-      else if (currentUser?.role === "teamleader") ergebnisEintragen();
-    }
-  });
+  const emailInput = document.getElementById("email");
+  if (emailInput) {
+    emailInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") login();
+    });
+  }
+
+  const schiriInput = document.getElementById("spielSchiri");
+  if (schiriInput) {
+    schiriInput.addEventListener("keydown", e => {
+      if (e.key === "Enter" && currentUser?.role === "admin") {
+        spielSpeichern();
+      }
+    });
+  }
 });
 
+// ===== Login über Schul-Mail =====
 function login() {
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value;
   const status = document.getElementById("loginStatus");
 
-  const user = users.find(u => u.username === username && u.password === password);
-  if (user) {
-    currentUser = user;
-    localStorage.setItem("currentUser", JSON.stringify(user));
-    handleLoginSuccess();
-    status.textContent = "Eingeloggt als " + user.username;
-  } else {
-    status.textContent = "Login fehlgeschlagen.";
+  if (!email.endsWith("@schule.at")) {
+    status.textContent = "Bitte Schul-E-Mail-Adresse verwenden!";
+    return;
   }
+
+  const adUser = activeDirectory.find(u => u.email === email);
+  if (!adUser) {
+    status.textContent = "Benutzer nicht im Active Directory gefunden.";
+    return;
+  }
+
+  currentUser = adUser;
+  localStorage.setItem("currentUser", JSON.stringify(currentUser));
+  status.textContent = "Angemeldet über Schul-Account";
+  handleLoginSuccess();
 }
 
+// ===== Login-Erfolg =====
 function handleLoginSuccess() {
   document.getElementById("login").classList.add("hidden");
   document.getElementById("logoutBtn").classList.remove("hidden");
 
   if (currentUser.role === "admin") {
     document.getElementById("spielForm").classList.remove("hidden");
-  } else if (currentUser.role === "teamleader") {
-    document.getElementById("ergebnisForm").classList.remove("hidden");
+  }
+
+  if (currentUser.role === "teamleader") {
+    document.getElementById("ergebnisForm")?.classList.remove("hidden");
     ladeSpieleInSelect();
   }
 }
 
+// ===== Logout =====
 function logout() {
   currentUser = null;
   localStorage.removeItem("currentUser");
+
   document.getElementById("login").classList.remove("hidden");
   document.getElementById("spielForm").classList.add("hidden");
-  document.getElementById("ergebnisForm").classList.add("hidden");
+  document.getElementById("ergebnisForm")?.classList.add("hidden");
   document.getElementById("logoutBtn").classList.add("hidden");
   document.getElementById("loginStatus").textContent = "";
 }
 
+// ===== Spiel anlegen (Admin) =====
 function spielSpeichern() {
-  const datum = document.getElementById("spielDatum").value;
-  const uhrzeit = document.getElementById("spielUhrzeit").value;
-  const platz = document.getElementById("spielPlatz").value;
-  const schiri = document.getElementById("spielSchiri").value;
+  if (currentUser?.role !== "admin") {
+    alert("Nur Admins dürfen Spiele anlegen!");
+    return;
+  }
+
+  const datum = spielDatum.value;
+  const uhrzeit = spielUhrzeit.value;
+  const platz = spielPlatz.value;
+  const schiri = spielSchiri.value;
   const fehlermeldung = document.getElementById("fehlermeldung");
 
   if (!datum || !uhrzeit || !platz || !schiri) {
@@ -82,14 +107,15 @@ function spielSpeichern() {
 
   fehlermeldung.textContent = "";
 
-  const neuesSpiel = { datum, uhrzeit, platz, schiri };
-  spiele.unshift(neuesSpiel);
+  spiele.unshift({ datum, uhrzeit, platz, schiri });
   localStorage.setItem("spiele", JSON.stringify(spiele));
+
   renderSpiele();
   resetForm();
-  ladeSpieleInSelect(); // auch Teamleader-Dropdown aktualisieren
+  ladeSpieleInSelect();
 }
 
+// ===== Spiele anzeigen =====
 function renderSpiele() {
   const liste = document.getElementById("spiele");
   liste.innerHTML = "";
@@ -101,15 +127,19 @@ function renderSpiele() {
   });
 }
 
+// ===== Formular reset =====
 function resetForm() {
-  document.getElementById("spielDatum").value = "";
-  document.getElementById("spielUhrzeit").value = "";
-  document.getElementById("spielPlatz").value = "";
-  document.getElementById("spielSchiri").value = "";
+  spielDatum.value = "";
+  spielUhrzeit.value = "";
+  spielPlatz.value = "";
+  spielSchiri.value = "";
 }
 
+// ===== Spiele für Ergebnis-Auswahl =====
 function ladeSpieleInSelect() {
   const select = document.getElementById("spielAuswahl");
+  if (!select) return;
+
   select.innerHTML = "";
   spiele.forEach((spiel, i) => {
     const opt = document.createElement("option");
@@ -119,8 +149,9 @@ function ladeSpieleInSelect() {
   });
 }
 
+// ===== Ergebnis eintragen (Teamleader) =====
 function ergebnisEintragen() {
-  const index = document.getElementById("spielAuswahl").value;
+  const index = spielAuswahl.value;
   const toreA = parseInt(document.getElementById("toreA").value);
   const toreB = parseInt(document.getElementById("toreB").value);
   const msg = document.getElementById("ergebnisMsg");
