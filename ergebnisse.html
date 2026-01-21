@@ -16,16 +16,18 @@
     <main>
         <section>
             <h2>Spiel auswählen</h2>
-            <select id="spielAuswahl">
-            </select>
+
+            <label for="spielAuswahl">Spiel</label>
+            <select id="spielAuswahl"></select>
         </section>
 
         <section>
             <h2>Ergebnis eintragen</h2>
-            <label>Team A Tore</label>
+
+            <label for="toreA">Team A Tore</label>
             <input type="number" id="toreA" min="0" />
 
-            <label>Team B Tore</label>
+            <label for="toreB">Team B Tore</label>
             <input type="number" id="toreB" min="0" />
 
             <button onclick="ergebnisSpeichern()">Ergebnis speichern</button>
