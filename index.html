@@ -1,156 +1,82 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Spielverwaltung</title>
+  <title>Fußballturnier</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Spielverwaltung</h1>
-    <button id="logoutBtn" class="hidden" onclick="logout()">Logout</button>
-  </header>
+<header>
+  <h1>Fußballturnier</h1>
+  <button id="logoutBtn" class="hidden" onclick="logout()">Logout</button>
+</header>
 
-  <main>
-    <!-- LOGIN -->
-    <section id="login">
-      <h2>Login</h2>
-      <input type="text" id="username" placeholder="Benutzername">
-      <input type="password" id="password" placeholder="Passwort">
-      <button onclick="login()">Login</button>
-      <p id="loginMessage"></p>
-    </section>
+<main>
+  <!-- Login / Registrierung -->
+  <section id="loginSection">
+    <h2>Login</h2>
+    <input id="username" placeholder="Benutzername">
+    <input id="password" type="password" placeholder="Passwort">
+    
+<section id="teamAssign" class="hidden">
+  <h2>Team auswählen</h2>
+  <select id="assignTeam"></select>
+  <button onclick="assignTeam()">Team beitreten</button>
+</section>
 
-    <!-- ADMIN: Spiel anlegen -->
-    <section id="spielForm" class="hidden">
-      <h2>Neues Spiel anlegen (Admin)</h2>
-      <input type="date" id="spielDatum">
-      <input type="time" id="spielUhrzeit">
-      <input type="text" id="spielPlatz" placeholder="Platz">
-      <input type="text" id="spielSchiri" placeholder="Schiedsrichter">
-      <button onclick="spielSpeichern()">Spiel speichern</button>
-      <p id="fehlermeldung"></p>
-    </section>
+    <button onclick="login()">Login</button>
+    <p id="loginMsg"></p>
 
-    <!-- TEAMLEADER: Ergebnis -->
-    <section id="ergebnisForm" class="hidden">
-      <h2>Ergebnis eintragen (Teamleader)</h2>
-      <input type="text" id="ergebnisText" placeholder="z.B. Team A 2:1 Team B">
-      <button onclick="ergebnisSpeichern()">Ergebnis speichern</button>
-    </section>
+    <h3>Registrieren</h3>
+    <input id="regUser" placeholder="Neuer Benutzername">
+    <input id="regPass" type="password" placeholder="Neues Passwort">
+    <button onclick="register()">Registrieren</button>
+  </section>
 
-    <!-- ALLE -->
-    <section>
-      <h2>Spiele</h2>
-      <ul id="spiele"></ul>
-    </section>
-  </main>
+  <!-- Turnier -->
+  <section id="tournamentSection" class="hidden">
+    <h2>Turnierverwaltung</h2>
+    <input id="turnierName" placeholder="Turniername">
+    <select id="turnierModus">
+      <option value="gruppe">Gruppen</option>
+      <option value="ko">KO</option>
+    </select>
+    <button onclick="createTournament()">Turnier anlegen</button>
+    <ul id="tournamentList"></ul>
+  </section>
 
-  <script src="script.js"></script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Spielverwaltung</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <header>
-    <h1>Spielverwaltung</h1>
-    <button id="logoutBtn" class="hidden" onclick="logout()">Logout</button>
-  </header>
+  <!-- Teams -->
+  <section id="teamSection" class="hidden">
+    <h2>Teams</h2>
+    <input id="teamName" placeholder="Teamname">
+    <button onclick="addTeam()">Team hinzufügen</button>
+    <ul id="teamList"></ul>
+  </section>
 
-  <main>
-    <!-- LOGIN -->
-    <section id="login">
-      <h2>Login</h2>
-      <input type="text" id="username" placeholder="Benutzername">
-      <input type="password" id="password" placeholder="Passwort">
-      <button onclick="login()">Login</button>
-      <p id="loginMessage"></p>
-    </section>
+  <!-- Spiele -->
+  <section id="gameSection" class="hidden">
+    <h2>Spiele</h2>
+    <button onclick="generateGames()">Spielplan erstellen</button>
+    <ul id="gameList"></ul>
+  </section>
 
-    <!-- ADMIN: Spiel anlegen -->
-    <section id="spielForm" class="hidden">
-      <h2>Neues Spiel anlegen (Admin)</h2>
-      <input type="date" id="spielDatum">
-      <input type="time" id="spielUhrzeit">
-      <input type="text" id="spielPlatz" placeholder="Platz">
-      <input type="text" id="spielSchiri" placeholder="Schiedsrichter">
-      <button onclick="spielSpeichern()">Spiel speichern</button>
-      <p id="fehlermeldung"></p>
-    </section>
+  <!-- Ranking -->
+  <section id="rankingSection" class="hidden">
+    <h2>Ranking</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Team</th><th>S</th><th>U</th><th>N</th>
+          <th>T</th><th>GT</th><th>Diff</th><th>P</th>
+        </tr>
+      </thead>
+      <tbody id="rankingBody"></tbody>
+    </table>
+  </section>
+</main>
 
-    <!-- TEAMLEADER: Ergebnis -->
-    <section id="ergebnisForm" class="hidden">
-      <h2>Ergebnis eintragen (Teamleader)</h2>
-      <input type="text" id="ergebnisText" placeholder="z.B. Team A 2:1 Team B">
-      <button onclick="ergebnisSpeichern()">Ergebnis speichern</button>
-    </section>
-
-    <!-- ALLE -->
-    <section>
-      <h2>Spiele</h2>
-      <ul id="spiele"></ul>
-    </section>
-  </main>
-
-  <script src="script.js"></script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Spielverwaltung</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <header>
-    <h1>Spielverwaltung</h1>
-    <button id="logoutBtn" class="hidden" onclick="logout()">Logout</button>
-  </header>
-
-  <main>
-    <!-- LOGIN -->
-    <section id="login">
-      <h2>Login</h2>
-      <input type="text" id="username" placeholder="Benutzername">
-      <input type="password" id="password" placeholder="Passwort">
-      <button onclick="login()">Login</button>
-      <p id="loginMessage"></p>
-    </section>
-
-    <!-- ADMIN: Spiel anlegen -->
-    <section id="spielForm" class="hidden">
-      <h2>Neues Spiel anlegen (Admin)</h2>
-      <input type="date" id="spielDatum">
-      <input type="time" id="spielUhrzeit">
-      <input type="text" id="spielPlatz" placeholder="Platz">
-      <input type="text" id="spielSchiri" placeholder="Schiedsrichter">
-      <button onclick="spielSpeichern()">Spiel speichern</button>
-      <p id="fehlermeldung"></p>
-    </section>
-
-    <!-- TEAMLEADER: Ergebnis -->
-    <section id="ergebnisForm" class="hidden">
-      <h2>Ergebnis eintragen (Teamleader)</h2>
-      <input type="text" id="ergebnisText" placeholder="z.B. Team A 2:1 Team B">
-      <button onclick="ergebnisSpeichern()">Ergebnis speichern</button>
-    </section>
-
-    <!-- ALLE -->
-    <section>
-      <h2>Spiele</h2>
-      <ul id="spiele"></ul>
-    </section>
-  </main>
-
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
