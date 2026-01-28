@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -19,13 +18,6 @@
     <h2>Login</h2>
     <input id="username" placeholder="Benutzername">
     <input id="password" type="password" placeholder="Passwort">
-    
-<section id="teamAssign" class="hidden">
-  <h2>Team auswählen</h2>
-  <select id="assignTeam"></select>
-  <button onclick="assignTeam()">Team beitreten</button>
-</section>
-
     <button onclick="login()">Login</button>
     <p id="loginMsg"></p>
 
@@ -35,19 +27,17 @@
     <button onclick="register()">Registrieren</button>
   </section>
 
-  <!-- Turnier -->
-  <section id="tournamentSection" class="hidden">
-    <h2>Turnierverwaltung</h2>
-    <input id="turnierName" placeholder="Turniername">
-    <select id="turnierModus">
-      <option value="gruppe">Gruppen</option>
-      <option value="ko">KO</option>
+  <!-- Turnierverwaltung -->
+  <section id="turnierSection" class="hidden">
+    <h2>Turniere</h2>
+    <select id="turnierSelect" onchange="showTournamentDetails()">
+      <option value="">Turnier auswählen</option>
     </select>
     <button onclick="createTournament()">Turnier anlegen</button>
     <ul id="tournamentList"></ul>
   </section>
 
-  <!-- Teams -->
+  <!-- Teamverwaltung -->
   <section id="teamSection" class="hidden">
     <h2>Teams</h2>
     <input id="teamName" placeholder="Teamname">

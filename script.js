@@ -8,7 +8,12 @@ let teams = JSON.parse(localStorage.getItem("teams")) || [];
 let games = JSON.parse(localStorage.getItem("games")) || [];
 
 document.addEventListener("DOMContentLoaded", () => {
-  if (currentUser) showApp();
+  // Überprüfen, ob ein Benutzer eingeloggt ist, und dann die App laden
+  if (currentUser) {
+    showApp();  // Wenn eingeloggt, zeige die App
+  } else {
+    loginSection.classList.remove("hidden");  // Zeige den Login-Bereich, wenn niemand eingeloggt ist
+  }
   renderAll();
   fillTeamSelect();
 });
@@ -68,50 +73,170 @@ function register() {
   alert("✅ Teamleiter angelegt – bitte einloggen");
 }
 
-function logout() {
-  currentUser = null;
-  localStorage.removeItem("currentUser");
-  location.reload();
+/* ================= TURNIER / TEAMS ================= */
+
+// Turnier auswählen und Details anzeigen
+function showTournamentDetails() {
+  const tournamentId = turnierSelect.value;
+  const tournament = tournaments.find(t => t.id === tournamentId);
+  if (!tournament) return;
+
+  renderTeamsAndGames(tournament);
 }
 
+// Teams und Spiele für das ausgewählte Turnier anzeigen
+function renderTeamsAndGames(tournament) {
+  teamList.innerHTML = tournament.teams.map(team => `<li>${team.name}</li>`).join("");
+  gameList.innerHTML = tournament.games.map((game, i) => {
+    return `
+      <li>
+        ${game.a} vs ${game.b} - ${game.ga ? `${game.ga} : ${game.gb}` : 'kein Ergebnis'}
+      </li>
+    `;
+  }).join("");
+}
 
-function saveResult(i) {
-  const g = games[i];
+// Turnier erstellen
+function createTournament() {
+  const tournament = {
+    id: Date.now(),
+    name: turnierName.value,
+    modus: turnierModus.value,
+    teams: [],
+    games: []
+  };
 
-  if (currentUser.role === "teamleader") {
-    if (currentUser.team !== g.a && currentUser.team !== g.b) {
-      alert("❌ Nur Spiele deines Teams!");
-      return;
-    }
-  }
-
-  g.ga = Number(document.getElementById("ga"+i).value);
-  g.gb = Number(document.getElementById("gb"+i).value);
+  tournaments.push(tournament);
   saveAll();
   renderAll();
 }
 
+// Team hinzufügen
+function addTeam() {
+  const teamName = teamName.value.trim();
+  
+  if (!teamName || isDuplicateName(teamName)) {
+    alert("❌ Teamname ungültig oder schon vorhanden!");
+    return;
+  }
 
-function assignTeam() {
-  const team = assignTeam.value;
-  if (!team) return alert("Bitte Team auswählen");
-
-  currentUser.team = team;
+  const newTeam = { name: teamName };
+  teams.push(newTeam);
+  teamName.value = "";
   saveAll();
-
-  teamAssign.classList.add("hidden");
-  gameSection.classList.remove("hidden");
+  renderAll();
+  fillTeamSelect();
 }
 
-
-function fillAssignTeamSelect() {
-  assignTeam.innerHTML =
-    `<option value="">Team auswählen</option>` +
-    teams.map(t => `<option value="${t.name}">${t.name}</option>`).join("");
+// Team bearbeiten
+function editTeam(index) {
+  const team = teams[index];
+  const newName = prompt("Neuer Teamname:", team.name);
+  
+  if (newName && !isDuplicateName(newName)) {
+    team.name = newName;
+    saveAll();
+    renderAll();
+  } else {
+    alert("❌ Teamname ist bereits vergeben oder ungültig");
+  }
 }
 
+// Team löschen
+function deleteTeam(index) {
+  if (confirm("Möchtest du dieses Team wirklich löschen?")) {
+    teams.splice(index, 1);
+    saveAll();
+    renderAll();
+  }
+}
 
-/* ================= UI ================= */
+// Validierung für doppelte Teamnamen
+function isDuplicateName(name) {
+  return teams.some(team => team.name.toLowerCase() === name.toLowerCase());
+}
+
+/* ================= SPIELE ================= */
+
+// Generiere Spielplan
+function generateGames() {
+  games = [];
+  for (let i = 0; i < teams.length; i++) {
+    for (let j = i + 1; j < teams.length; j++) {
+      games.push({ a: teams[i].name, b: teams[j].name, ga: null, gb: null });
+    }
+  }
+  saveAll();
+  renderAll();
+}
+
+// Ergebnisse speichern und anzeigen
+function handleScoreChange(i) {
+  const g = games[i];
+  const ga = Number(document.getElementById("ga" + i).value);
+  const gb = Number(document.getElementById("gb" + i).value);
+
+  if (!isNaN(ga) && !isNaN(gb)) {
+    g.ga = ga;
+    g.gb = gb;
+    saveAll();
+    renderAll();
+  }
+}
+
+/* ================= RENDER ================= */
+
+function renderAll() {
+  // Turnier-Liste
+  tournamentList.innerHTML = tournaments.map(t => `
+    <li>
+      <a href="#" onclick="showTournamentDetails(${t.id})">${t.name}</a>
+    </li>
+  `).join("");
+
+  teamList.innerHTML = teams.map((team, i) => `
+    <li>
+      ${team.name}
+      <button onclick="editTeam(${i})">Bearbeiten</button>
+      <button onclick="deleteTeam(${i})">Löschen</button>
+    </li>
+  `).join("");
+
+  gameList.innerHTML = games.map((game, i) => `
+    <li>
+      ${game.a} vs ${game.b} - ${game.ga ? `${game.ga} : ${game.gb}` : 'kein Ergebnis'}
+    </li>
+  `).join("");
+}
+
+function renderRanking() {
+  const stats = {};
+  teams.forEach(t => stats[t.name] = { p: 0, t: 0, gt: 0 });
+
+  games.filter(g => g.ga !== null).forEach(g => {
+    stats[g.a].t += g.ga;
+    stats[g.a].gt += g.gb;
+    stats[g.b].t += g.gb;
+    stats[g.b].gt += g.ga;
+
+    if (g.ga > g.gb) stats[g.a].p += 3;
+    else if (g.ga < g.gb) stats[g.b].p += 3;
+    else { stats[g.a].p++; stats[g.b].p++; }
+  });
+
+  rankingBody.innerHTML =
+    Object.entries(stats)
+      .sort((a, b) => b[1].p - a[1].p || (b[1].t - b[1].gt) - (a[1].t - a[1].gt))
+      .map(([n, s]) => `
+        <tr>
+          <td>${n}</td>
+          <td>${s.t}</td>
+          <td>${s.gt}</td>
+          <td>${s.t - s.gt}</td>
+          <td>${s.p}</td>
+        </tr>
+      `).join("");
+}
 
 function showApp() {
   loginSection.classList.add("hidden");
@@ -135,128 +260,16 @@ function showApp() {
   }
 }
 
-
-/* ================= TURNIER / TEAMS ================= */
-
-function createTournament() {
-  tournaments.push({ name: turnierName.value, modus: turnierModus.value });
-  turnierName.value = "";
-  saveAll();
-  renderAll();
+function logout() {
+  currentUser = null;
+  localStorage.removeItem("currentUser");
+  loginSection.classList.remove("hidden");
+  logoutBtn.classList.add("hidden");
+  location.reload();
 }
 
-function addTeam() {
-  teams.push({ name: teamName.value });
-  teamName.value = "";
-  saveAll();
-  renderAll();
-  fillTeamSelect();
-}
-
-function fillTeamSelect() {
-  if (!regTeam) return;
-  regTeam.innerHTML =
+function fillAssignTeamSelect() {
+  assignTeam.innerHTML =
     `<option value="">Team auswählen</option>` +
     teams.map(t => `<option value="${t.name}">${t.name}</option>`).join("");
-}
-
-/* ================= SPIELE ================= */
-
-function generateGames() {
-  games = [];
-  for (let i = 0; i < teams.length; i++) {
-    for (let j = i + 1; j < teams.length; j++) {
-      games.push({ a: teams[i].name, b: teams[j].name, ga: null, gb: null });
-    }
-  }
-  saveAll();
-  renderAll();
-}
-
-function saveResult(i) {
-  const g = games[i];
-
-  if (currentUser.role === "teamleader") {
-    if (currentUser.team !== g.a && currentUser.team !== g.b) {
-      alert("❌ Du darfst nur Spiele deines Teams eintragen");
-      return;
-    }
-  }
-
-  const ga = Number(document.getElementById("ga" + i).value);
-  const gb = Number(document.getElementById("gb" + i).value);
-
-  if (isNaN(ga) || isNaN(gb)) return;
-
-  g.ga = ga;
-  g.gb = gb;
-  saveAll();
-  renderAll();
-}
-
-/* ================= RENDER ================= */
-
-function renderAll() {
-  tournamentList.innerHTML =
-    tournaments.map(t => `<li>${t.name} (${t.modus})</li>`).join("");
-
-  teamList.innerHTML =
-    teams.map(t => `<li>${t.name}</li>`).join("");
-
-  gameList.innerHTML =
-    games.map((g, i) => {
-      const canEdit =
-        currentUser &&
-        (currentUser.role === "admin" ||
-         (currentUser.role === "teamleader" &&
-          (currentUser.team === g.a || currentUser.team === g.b)));
-
-      return `
-        <li>
-          <strong>${g.a}</strong> vs <strong>${g.b}</strong>
-          ${
-            canEdit
-              ? `
-                <input id="ga${i}" type="number" value="${g.ga ?? ""}">
-                <input id="gb${i}" type="number" value="${g.gb ?? ""}">
-                <button onclick="saveResult(${i})">Speichern</button>
-              `
-              : g.ga !== null
-                ? `<span>${g.ga} : ${g.gb}</span>`
-                : `<em>kein Ergebnis</em>`
-          }
-        </li>
-      `;
-    }).join("");
-
-  renderRanking();
-}
-
-function renderRanking() {
-  const stats = {};
-  teams.forEach(t => stats[t.name] = { p:0,t:0,gt:0 });
-
-  games.filter(g => g.ga !== null).forEach(g => {
-    stats[g.a].t += g.ga;
-    stats[g.a].gt += g.gb;
-    stats[g.b].t += g.gb;
-    stats[g.b].gt += g.ga;
-
-    if (g.ga > g.gb) stats[g.a].p += 3;
-    else if (g.ga < g.gb) stats[g.b].p += 3;
-    else { stats[g.a].p++; stats[g.b].p++; }
-  });
-
-  rankingBody.innerHTML =
-    Object.entries(stats)
-      .sort((a,b)=>b[1].p-a[1].p || (b[1].t-b[1].gt)-(a[1].t-a[1].gt))
-      .map(([n,s]) => `
-        <tr>
-          <td>${n}</td>
-          <td>${s.t}</td>
-          <td>${s.gt}</td>
-          <td>${s.t - s.gt}</td>
-          <td>${s.p}</td>
-        </tr>
-      `).join("");
 }
