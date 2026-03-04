@@ -144,3 +144,45 @@ function resetForm() {
   document.getElementById("spielPlatz").value = "";
   document.getElementById("spielSchiri").value = "";
 }
+
+function deleteSpiel(index) {
+  if (!isAdmin) {
+    alert("Nur Admins dürfen Spiele löschen!");
+    return;
+  }
+  spiele.splice(index, 1);
+  renderSpiele();
+}
+
+function editSpiel(index) {
+  if (!isAdmin) {
+    alert("Nur Admins dürfen Spiele bearbeiten!");
+    return;
+  }
+  const spiel = spiele[index];
+  document.getElementById("spielDatum").value = spiel.datum;
+  document.getElementById("spielUhrzeit").value = spiel.uhrzeit;
+  document.getElementById("spielPlatz").value = spiel.platz;
+  document.getElementById("spielSchiri").value = spiel.schiri;
+  spiele.splice(index, 1);
+  renderSpiele();
+}
+
+function exportSpiele() {
+  const json = JSON.stringify(spiele, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "spiele.json";
+  a.click();
+}
+
+function suchen(suchtext) {
+  const gefiltert = spiele.filter(spiel => 
+    spiel.datum.includes(suchtext) || 
+    spiel.platz.includes(suchtext) ||
+    spiel.schiri.includes(suchtext)
+  );
+  return gefiltert;
+}
