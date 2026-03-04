@@ -43,6 +43,7 @@ function login() {
   localStorage.setItem("user", JSON.stringify(user));
   document.getElementById("loginForm").style.display = "none";
   document.getElementById("adminStatus").style.display = "block";
+  document.getElementById("adminTools").style.display = "block";
 }
 
 function logout() {
@@ -109,9 +110,13 @@ function renderSpiele() {
   const liste = document.getElementById("spiele");
   liste.innerHTML = "";
 
-  spiele.forEach(spiel => {
+  spiele.forEach((spiel, index) => {
     const li = document.createElement("li");
-    li.textContent = `${spiel.datum} ${spiel.uhrzeit} | Platz: ${spiel.platz} | SR: ${spiel.schiri}`;
+    li.innerHTML = `
+      ${spiel.datum} ${spiel.uhrzeit} | Platz: ${spiel.platz} | SR: ${spiel.schiri}
+      ${isAdmin ? `<button onclick="editSpiel(${index})">Bearbeiten</button>
+                   <button onclick="deleteSpiel(${index})">Löschen</button>` : ""}
+    `;
     liste.appendChild(li);
   });
 }
@@ -188,7 +193,13 @@ function suchen(suchtext) {
 }
 
 function displaySearchResults(suchtext) {
-  const ergebnisse = suchen(suchtext);
+  const ergebnisse = spiele
+    .map((spiel, index) => ({ spiel, index }))
+    .filter(({ spiel }) =>
+      spiel.datum.includes(suchtext) ||
+      spiel.platz.includes(suchtext) ||
+      spiel.schiri.includes(suchtext)
+    );
   const liste = document.getElementById("spiele");
   liste.innerHTML = "";
 
@@ -197,7 +208,7 @@ function displaySearchResults(suchtext) {
     return;
   }
 
-  ergebnisse.forEach((spiel, index) => {
+  ergebnisse.forEach(({ spiel, index }) => {
     const li = document.createElement("li");
     li.innerHTML = `
       ${spiel.datum} ${spiel.uhrzeit} | Platz: ${spiel.platz} | SR: ${spiel.schiri}

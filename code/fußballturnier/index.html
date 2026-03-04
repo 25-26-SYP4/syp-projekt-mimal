@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fußballturnier Verwaltung</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="hero">
+      <h1>Fußballturnier Verwaltung</h1>
+      <p>Spiele planen, durchsuchen und als JSON exportieren.</p>
+    </header>
+
+    <section class="card" id="loginForm">
+      <h2>Admin Login</h2>
+      <div class="form-grid">
+        <label for="username">Benutzername</label>
+        <input id="username" type="text" placeholder="admin" />
+
+        <label for="password">Passwort</label>
+        <input id="password" type="password" placeholder="••••••" />
+      </div>
+      <div class="actions">
+        <button type="button" onclick="login()">Login</button>
+      </div>
+      <p id="loginMessage" class="message"></p>
+    </section>
+
+    <section class="card" id="adminStatus" style="display: none;">
+      <h2>Admin aktiv</h2>
+      <p>Du bist als Admin eingeloggt.</p>
+      <div class="actions">
+        <button type="button" class="secondary" onclick="logout()">Logout</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Registrierung (Viewer)</h2>
+      <div class="form-grid">
+        <label for="regUsername">Benutzername</label>
+        <input id="regUsername" type="text" placeholder="neuer user" />
+
+        <label for="regPassword">Passwort</label>
+        <input id="regPassword" type="password" placeholder="Passwort" />
+      </div>
+      <div class="actions">
+        <button type="button" onclick="register()">Registrieren</button>
+      </div>
+      <p id="registerMessage" class="message"></p>
+    </section>
+
+    <section class="card" id="adminTools" style="display: none;">
+      <h2>Spiel anlegen / bearbeiten</h2>
+      <div class="form-grid">
+        <label for="spielDatum">Datum</label>
+        <input id="spielDatum" type="date" />
+
+        <label for="spielUhrzeit">Uhrzeit</label>
+        <input id="spielUhrzeit" type="time" />
+
+        <label for="spielPlatz">Platz</label>
+        <input id="spielPlatz" type="text" placeholder="Platz 1" />
+
+        <label for="spielSchiri">Schiedsrichter</label>
+        <input id="spielSchiri" type="text" placeholder="Name" />
+      </div>
+      <div class="actions">
+        <button type="button" onclick="spielSpeichern()">Spiel speichern</button>
+      </div>
+    </section>
+
+    <section class="card" id="adminCreator">
+      <h2>Admin erstellen</h2>
+      <div class="form-grid">
+        <label for="adminName">Admin Name</label>
+        <input id="adminName" type="text" placeholder="neuer admin" />
+
+        <label for="adminPass">Admin Passwort</label>
+        <input id="adminPass" type="password" placeholder="Passwort" />
+      </div>
+      <div class="actions">
+        <button type="button" onclick="createAdmin()">Admin erstellen</button>
+      </div>
+      <p id="adminMsg" class="message"></p>
+    </section>
+
+    <section class="card">
+      <h2>Spiele</h2>
+      <div class="top-row">
+        <input
+          type="text"
+          class="search"
+          placeholder="Suche nach Datum, Platz oder Schiri..."
+          oninput="displaySearchResults(this.value)"
+        />
+        <button type="button" class="secondary" onclick="exportSpiele()">Export JSON</button>
+      </div>
+      <ul id="spiele" class="spiele-liste"></ul>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
