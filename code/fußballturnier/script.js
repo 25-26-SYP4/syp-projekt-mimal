@@ -186,3 +186,24 @@ function suchen(suchtext) {
   );
   return gefiltert;
 }
+
+function displaySearchResults(suchtext) {
+  const ergebnisse = suchen(suchtext);
+  const liste = document.getElementById("spiele");
+  liste.innerHTML = "";
+
+  if (ergebnisse.length === 0) {
+    liste.innerHTML = "<li>Keine Ergebnisse gefunden</li>";
+    return;
+  }
+
+  ergebnisse.forEach((spiel, index) => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      ${spiel.datum} ${spiel.uhrzeit} | Platz: ${spiel.platz} | SR: ${spiel.schiri}
+      ${isAdmin ? `<button onclick="editSpiel(${index})">Bearbeiten</button>
+                   <button onclick="deleteSpiel(${index})">Löschen</button>` : ""}
+    `;
+    liste.appendChild(li);
+  });
+}
