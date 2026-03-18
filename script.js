@@ -18,6 +18,16 @@ document.addEventListener("DOMContentLoaded", () => {
   fillTeamSelect();
 });
 
+function fillTeamSelect() {
+  // Optional: Nur wenn es im HTML ein Team-Select gibt (z.B. bei Registrierung)
+  const regTeamEl = document.getElementById("regTeam");
+  if (!regTeamEl) return;
+
+  regTeamEl.innerHTML =
+    `<option value="">Team auswählen</option>` +
+    teams.map(t => `<option value="${t.name}">${t.name}</option>`).join("");
+}
+
 function saveAll() {
   localStorage.setItem("users", JSON.stringify(users));
   localStorage.setItem("currentUser", JSON.stringify(currentUser));
@@ -46,7 +56,12 @@ function login() {
 function register() {
   const u = regUser.value.trim();
   const p = regPass.value.trim();
-  const team = regTeam.value;
+  const regTeamEl = document.getElementById("regTeam");
+  if (!regTeamEl) {
+    alert("Team-Auswahl fehlt (Select mit id=regTeam)");
+    return;
+  }
+  const team = regTeamEl.value;
 
   if (!u || !p || !team) {
     alert("Bitte alles ausfüllen");
@@ -68,7 +83,7 @@ function register() {
   saveAll();
   regUser.value = "";
   regPass.value = "";
-  regTeam.value = "";
+  regTeamEl.value = "";
 
   alert("✅ Teamleiter angelegt – bitte einloggen");
 }
@@ -173,15 +188,20 @@ function generateGames() {
 // Ergebnisse speichern und anzeigen
 function handleScoreChange(i) {
   const g = games[i];
-  const ga = Number(document.getElementById("ga" + i).value);
-  const gb = Number(document.getElementById("gb" + i).value);
 
-  if (!isNaN(ga) && !isNaN(gb)) {
-    g.ga = ga;
-    g.gb = gb;
-    saveAll();
-    renderAll();
-  }
+  const gaRaw = document.getElementById("ga" + i).value;
+  const gbRaw = document.getElementById("gb" + i).value;
+  const ga = gaRaw === "" ? null : Number(gaRaw);
+  const gb = gbRaw === "" ? null : Number(gbRaw);
+
+  // Nur speichern, wenn beide Werte vorhanden und gültig sind.
+  if (ga === null || gb === null) return;
+  if (Number.isNaN(ga) || Number.isNaN(gb)) return;
+
+  g.ga = ga;
+  g.gb = gb;
+  saveAll();
+  renderAll();
 }
 
 /* ================= RENDER ================= */
@@ -202,11 +222,35 @@ function renderAll() {
     </li>
   `).join("");
 
-  gameList.innerHTML = games.map((game, i) => `
-    <li>
-      ${game.a} vs ${game.b} - ${game.ga ? `${game.ga} : ${game.gb}` : 'kein Ergebnis'}
-    </li>
-  `).join("");
+  gameList.innerHTML = games.map((game, i) => {
+    const hasResult = game.ga !== null && game.gb !== null;
+    const mainLabel = hasResult
+      ? `${game.a} ${game.ga}:${game.gb} ${game.b}`
+      : `${game.a} _:_ ${game.b}`;
+
+    return `
+      <li class="game-row">
+        <div class="score-entry">
+          <div class="score-label">
+            <span class="score-label-main">${mainLabel}</span>
+            <span class="score-label-sub">Links: Tore für ${game.a} · Rechts: Tore für ${game.b}</span>
+          </div>
+
+          <div class="score-inputs">
+            <label class="sr-only" for="ga${i}">Tore für ${game.a}</label>
+            <input id="ga${i}" class="score-input" type="number" min="0" inputmode="numeric" value="${game.ga ?? ""}" onchange="handleScoreChange(${i})" placeholder="0">
+
+            <span class="score-sep">:</span>
+
+            <label class="sr-only" for="gb${i}">Tore für ${game.b}</label>
+            <input id="gb${i}" class="score-input" type="number" min="0" inputmode="numeric" value="${game.gb ?? ""}" onchange="handleScoreChange(${i})" placeholder="0">
+          </div>
+
+          <div class="score-result">${hasResult ? `${game.ga} : ${game.gb}` : "kein Ergebnis"}</div>
+        </div>
+      </li>
+    `;
+  }).join("");
 }
 
 function renderRanking() {

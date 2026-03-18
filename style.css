@@ -80,6 +80,80 @@ li {
   border-radius: 8px;
 }
 
+.game-row {
+  padding: 0.7rem;
+}
+
+.score-entry {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.score-label {
+  min-width: 0;
+}
+
+.score-label-main {
+  display: block;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.score-label-sub {
+  display: block;
+  opacity: 0.85;
+  font-size: 0.9rem;
+  margin-top: 0.15rem;
+}
+
+.score-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.score-input {
+  width: 5.5rem;
+  margin: 0;
+  text-align: center;
+}
+
+.score-sep {
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+.score-result {
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .score-entry {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    align-items: start;
+  }
+
+  .score-result {
+    order: 3;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
