@@ -3,165 +3,137 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fußballturnier Verwaltung</title>
+  <title>Fußballturnier Portal</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="bg-layer"></div>
   <main class="container">
     <header class="hero">
-      <h1>Fußballturnier Verwaltung</h1>
-      <p>Spiele planen, durchsuchen und als JSON exportieren.</p>
+      <div>
+        <p class="kicker">Fußballturnier Portal</p>
+        <h1>Planung wie bei großen Plattformen</h1>
+        <p class="hero-text">Einloggen, registrieren, Spiele verwalten und Daten exportieren - in einem klaren Flow.</p>
+      </div>
+      <div class="session-box" id="sessionBox">
+        <p class="session-label">Nicht eingeloggt</p>
+        <p class="session-user" id="sessionUser">Bitte anmelden oder registrieren</p>
+        <button type="button" id="logoutBtn" class="secondary hidden">Logout</button>
+      </div>
     </header>
 
-    <section class="card" id="loginForm">
-      <h2>Admin Login</h2>
-      <div class="form-grid">
-        <label for="username">Benutzername</label>
-        <input id="username" type="text" placeholder="admin" />
+    <section class="grid auth-grid" id="authSection">
+      <article class="card">
+        <h2>Login</h2>
+        <form id="loginForm" class="form-grid" autocomplete="on">
+          <label for="loginUsername">Benutzername</label>
+          <input id="loginUsername" name="username" type="text" placeholder="z. B. admin" required />
 
-        <label for="password">Passwort</label>
-        <input id="password" type="password" placeholder="••••••" />
-      </div>
-      <div class="actions">
-        <button type="button" onclick="login()">Login</button>
-      </div>
-      <p id="loginMessage" class="message"></p>
+          <label for="loginPassword">Passwort</label>
+          <input id="loginPassword" name="password" type="password" placeholder="Passwort" required />
+
+          <div class="actions full-width">
+            <button type="submit">Einloggen</button>
+          </div>
+        </form>
+        <p id="loginMessage" class="message"></p>
+      </article>
+
+      <article class="card">
+        <h2>Registrieren</h2>
+        <form id="registerForm" class="form-grid" autocomplete="on">
+          <label for="registerUsername">Benutzername</label>
+          <input id="registerUsername" name="username" type="text" placeholder="Neuer Benutzername" required />
+
+          <label for="registerPassword">Passwort</label>
+          <input id="registerPassword" name="password" type="password" placeholder="Mind. 6 Zeichen" required />
+
+          <div class="actions full-width">
+            <button type="submit">Account erstellen</button>
+          </div>
+        </form>
+        <p id="registerMessage" class="message"></p>
+      </article>
     </section>
 
-    <section class="card" id="adminStatus" style="display: none;">
-      <h2>Admin aktiv</h2>
-      <p>Du bist als Admin eingeloggt.</p>
-      <div class="actions">
-        <button type="button" class="secondary" onclick="logout()">Logout</button>
+    <section class="card hidden" id="dashboardSection">
+      <h2>Dashboard</h2>
+      <div class="stats-grid">
+        <div class="stat-tile">
+          <p class="stat-label">Gesamtspiele</p>
+          <p id="totalMatches" class="stat-value">0</p>
+        </div>
+        <div class="stat-tile">
+          <p class="stat-label">Nächste Spiele</p>
+          <p id="upcomingMatches" class="stat-value">0</p>
+        </div>
+        <div class="stat-tile">
+          <p class="stat-label">Rolle</p>
+          <p id="roleLabel" class="stat-value">Gast</p>
+        </div>
       </div>
     </section>
 
-    <section class="card">
-      <h2>Registrierung (Viewer)</h2>
-      <div class="form-grid">
-        <label for="regUsername">Benutzername</label>
-        <input id="regUsername" type="text" placeholder="neuer user" />
-
-        <label for="regPassword">Passwort</label>
-        <input id="regPassword" type="password" placeholder="Passwort" />
-      </div>
-      <div class="actions">
-        <button type="button" onclick="register()">Registrieren</button>
-      </div>
-      <p id="registerMessage" class="message"></p>
-    </section>
-
-    <section class="card" id="adminTools" style="display: none;">
+    <section class="card hidden" id="adminTools">
       <h2>Spiel anlegen / bearbeiten</h2>
-      <div class="form-grid">
+      <form id="matchForm" class="form-grid" autocomplete="off">
         <label for="spielDatum">Datum</label>
-        <input id="spielDatum" type="date" />
+        <input id="spielDatum" type="date" required />
 
         <label for="spielUhrzeit">Uhrzeit</label>
-        <input id="spielUhrzeit" type="time" />
+        <input id="spielUhrzeit" type="time" required />
+
+        <label for="heimTeam">Heimteam</label>
+        <input id="heimTeam" type="text" placeholder="Team A" required />
+
+        <label for="gastTeam">Gastteam</label>
+        <input id="gastTeam" type="text" placeholder="Team B" required />
 
         <label for="spielPlatz">Platz</label>
-        <input id="spielPlatz" type="text" placeholder="Platz 1" />
+        <input id="spielPlatz" type="text" placeholder="Platz 1" required />
 
         <label for="spielSchiri">Schiedsrichter</label>
-        <input id="spielSchiri" type="text" placeholder="Name" />
-      </div>
-      <div class="actions">
-        <button type="button" onclick="spielSpeichern()">Spiel speichern</button>
-      </div>
+        <input id="spielSchiri" type="text" placeholder="Name" required />
+
+        <div class="actions full-width">
+          <button type="submit" id="saveMatchBtn">Spiel speichern</button>
+          <button type="button" id="cancelEditBtn" class="secondary hidden">Bearbeiten abbrechen</button>
+        </div>
+      </form>
+      <p id="matchMessage" class="message"></p>
     </section>
 
-    <section class="card" id="adminCreator">
+    <section class="card hidden" id="adminCreator">
       <h2>Admin erstellen</h2>
-      <div class="form-grid">
+      <form id="adminForm" class="form-grid" autocomplete="off">
         <label for="adminName">Admin Name</label>
-        <input id="adminName" type="text" placeholder="neuer admin" />
+        <input id="adminName" type="text" placeholder="Neuer Admin" required />
 
         <label for="adminPass">Admin Passwort</label>
-        <input id="adminPass" type="password" placeholder="Passwort" />
-      </div>
-      <div class="actions">
-        <button type="button" onclick="createAdmin()">Admin erstellen</button>
-      </div>
+        <input id="adminPass" type="password" placeholder="Mind. 6 Zeichen" required />
+
+        <div class="actions full-width">
+          <button type="submit">Admin erstellen</button>
+        </div>
+      </form>
       <p id="adminMsg" class="message"></p>
     </section>
 
-    <section class="card">
-      <h2>Spiele</h2>
+    <section class="card hidden" id="matchesSection">
       <div class="top-row">
-        <input
-          type="text"
-          class="search"
-          placeholder="Suche nach Datum, Platz oder Schiri..."
-          oninput="displaySearchResults(this.value)"
-        />
-        <button type="button" class="secondary" onclick="exportSpiele()">Export JSON</button>
+        <h2>Spiele</h2>
+        <div class="inline-actions">
+          <button type="button" class="secondary" id="exportBtn">Export JSON</button>
+        </div>
       </div>
+
+      <div class="top-row">
+        <input type="text" id="searchInput" class="search" placeholder="Suche: Team, Datum, Platz, Schiri" />
+      </div>
+
       <ul id="spiele" class="spiele-liste"></ul>
     </section>
   </main>
-
   <script src="script.js"></script>
 </body>
 </html>
-<style>
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes slideInLeft {
-    from {
-      opacity: 0;
-      transform: translateX(-30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.05);
-    }
-  }
-
-  .card {
-    animation: fadeInUp 0.6s ease-out;
-  }
-
-  .card:nth-child(odd) {
-    animation: slideInLeft 0.6s ease-out;
-  }
-
-  button {
-    transition: all 0.3s ease;
-  }
-
-  button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  button:active {
-    transform: translateY(0);
-  }
-
-  input:focus {
-    animation: pulse 0.3s ease-out;
-  }
-
-  .message {
-    animation: fadeInUp 0.4s ease-out;
-  }
-</style>
