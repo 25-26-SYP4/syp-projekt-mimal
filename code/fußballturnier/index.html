@@ -14,6 +14,7 @@
         <p class="kicker">Fußballturnier Portal</p>
         <h1>Planung wie bei großen Plattformen</h1>
         <p class="hero-text">Einloggen, registrieren, Spiele verwalten und Daten exportieren - in einem klaren Flow.</p>
+        <p id="championBadge" class="champion-badge hidden">Champion: -</p>
       </div>
       <div class="session-box" id="sessionBox">
         <p class="session-label">Nicht eingeloggt</p>
@@ -21,6 +22,12 @@
         <button type="button" id="logoutBtn" class="secondary hidden">Logout</button>
       </div>
     </header>
+
+    <nav class="app-nav hidden" id="appNav" aria-label="Hauptnavigation">
+      <button type="button" class="nav-btn is-active" data-view="dashboard">Dashboard</button>
+      <button type="button" class="nav-btn" data-view="matches">Spiele</button>
+      <button type="button" class="nav-btn" data-view="bracket">Turnierbaum</button>
+    </nav>
 
     <section class="grid auth-grid" id="authSection">
       <article class="card">
@@ -56,7 +63,7 @@
       </article>
     </section>
 
-    <section class="card hidden" id="dashboardSection">
+    <section class="card hidden" id="dashboardSection" data-view="dashboard">
       <h2>Dashboard</h2>
       <div class="stats-grid">
         <div class="stat-tile">
@@ -74,7 +81,7 @@
       </div>
     </section>
 
-    <section class="card hidden" id="adminTools">
+    <section class="card hidden" id="adminTools" data-view="dashboard">
       <h2>Spiel anlegen / bearbeiten</h2>
       <form id="matchForm" class="form-grid" autocomplete="off">
         <label for="spielDatum">Datum</label>
@@ -103,7 +110,7 @@
       <p id="matchMessage" class="message"></p>
     </section>
 
-    <section class="card hidden" id="adminCreator">
+    <section class="card hidden" id="adminCreator" data-view="dashboard">
       <h2>Admin erstellen</h2>
       <form id="adminForm" class="form-grid" autocomplete="off">
         <label for="adminName">Admin Name</label>
@@ -119,7 +126,7 @@
       <p id="adminMsg" class="message"></p>
     </section>
 
-    <section class="card hidden" id="matchesSection">
+    <section class="card hidden" id="matchesSection" data-view="matches">
       <div class="top-row">
         <h2>Spiele</h2>
         <div class="inline-actions">
@@ -132,6 +139,31 @@
       </div>
 
       <ul id="spiele" class="spiele-liste"></ul>
+    </section>
+
+    <section class="card hidden" id="bracketSection" data-view="bracket">
+      <div class="top-row">
+        <h2>Turnierbaum</h2>
+        <p class="bracket-subtitle">Automatisch aus den vorhandenen Teams erzeugt</p>
+      </div>
+      <div class="bracket-controls">
+        <div class="form-grid compact">
+          <label for="drawMode">Auslosung</label>
+          <select id="drawMode">
+            <option value="seeded">Setzliste (Reihenfolge bleibt)</option>
+            <option value="random">Zufallsauslosung</option>
+          </select>
+
+          <label for="teamSeedInput">Teams (eine Zeile pro Team)</label>
+          <textarea id="teamSeedInput" rows="6" placeholder="Team A&#10;Team B&#10;Team C"></textarea>
+        </div>
+        <div class="actions">
+          <button type="button" id="loadTeamsBtn" class="secondary">Teams aus Spielen laden</button>
+          <button type="button" id="generateBracketBtn">K.-o.-Baum generieren</button>
+        </div>
+      </div>
+      <p id="bracketInfo" class="message"></p>
+      <div id="bracketBoard" class="bracket-board"></div>
     </section>
   </main>
   <script src="script.js"></script>
