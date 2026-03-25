@@ -2,17 +2,34 @@ const STORAGE_KEYS = {
   USERS: "ft_users",
   SESSION: "ft_session",
   MATCHES: "ft_matches",
-  BRACKET: "ft_bracket"
+  BRACKET: "ft_bracket",
+  GROUPS: "ft_groups",
+  PLAYERS: "ft_players",
+  NOTIFICATIONS: "ft_notifications",
+  ARCHIVES: "ft_archives",
+  THEME: "ft_theme"
+};
+
+const ROLE_LABELS = {
+  admin: "Admin",
+  trainer: "Trainer",
+  referee: "Schiri",
+  viewer: "Zuschauer"
 };
 
 const state = {
   users: [],
   matches: [],
   bracket: null,
+  groups: [],
+  players: {},
+  notifications: [],
+  archives: [],
   currentUser: null,
   editingMatchId: null,
   searchTerm: "",
-  activeView: "dashboard"
+  activeView: "dashboard",
+  theme: "light"
 };
 
 const el = {
@@ -22,6 +39,7 @@ const el = {
   dashboardSection: document.getElementById("dashboardSection"),
   adminTools: document.getElementById("adminTools"),
   adminCreator: document.getElementById("adminCreator"),
+  organizationSection: document.getElementById("organizationSection"),
   matchesSection: document.getElementById("matchesSection"),
   bracketSection: document.getElementById("bracketSection"),
   bracketBoard: document.getElementById("bracketBoard"),
@@ -34,6 +52,7 @@ const el = {
   sessionUser: document.getElementById("sessionUser"),
   sessionBox: document.getElementById("sessionBox"),
   logoutBtn: document.getElementById("logoutBtn"),
+  themeToggleBtn: document.getElementById("themeToggleBtn"),
   roleLabel: document.getElementById("roleLabel"),
   totalMatches: document.getElementById("totalMatches"),
   upcomingMatches: document.getElementById("upcomingMatches"),
@@ -50,11 +69,29 @@ const el = {
   saveMatchBtn: document.getElementById("saveMatchBtn"),
   cancelEditBtn: document.getElementById("cancelEditBtn"),
   exportBtn: document.getElementById("exportBtn"),
+  groupSizeInput: document.getElementById("groupSizeInput"),
+  groupTeamsInput: document.getElementById("groupTeamsInput"),
+  loadGroupTeamsBtn: document.getElementById("loadGroupTeamsBtn"),
+  generateGroupsBtn: document.getElementById("generateGroupsBtn"),
+  transferToKoBtn: document.getElementById("transferToKoBtn"),
+  groupMessage: document.getElementById("groupMessage"),
+  groupBoard: document.getElementById("groupBoard"),
+  playerTeamSelect: document.getElementById("playerTeamSelect"),
+  playerNameInput: document.getElementById("playerNameInput"),
+  addPlayerBtn: document.getElementById("addPlayerBtn"),
+  playerMessage: document.getElementById("playerMessage"),
+  playerList: document.getElementById("playerList"),
+  markNotificationsReadBtn: document.getElementById("markNotificationsReadBtn"),
+  notificationList: document.getElementById("notificationList"),
+  archiveTournamentBtn: document.getElementById("archiveTournamentBtn"),
+  archiveMessage: document.getElementById("archiveMessage"),
+  archiveList: document.getElementById("archiveList"),
   fields: {
     loginUsername: document.getElementById("loginUsername"),
     loginPassword: document.getElementById("loginPassword"),
     registerUsername: document.getElementById("registerUsername"),
     registerPassword: document.getElementById("registerPassword"),
+    registerRole: document.getElementById("registerRole"),
     adminName: document.getElementById("adminName"),
     adminPass: document.getElementById("adminPass"),
     spielDatum: document.getElementById("spielDatum"),
@@ -71,6 +108,7 @@ init();
 function init() {
   initializeStorage();
   restoreSession();
+  applyTheme(state.theme);
   bindEvents();
   refreshUI();
 }
@@ -80,26 +118,38 @@ function initializeStorage() {
   if (!users.length) {
     const seedUsers = [
       { username: "admin", password: "admin123", role: "admin" },
-      { username: "gast", password: "gast123", role: "viewer" }
+      { username: "gast", password: "gast123", role: "viewer" },
+      { username: "trainer", password: "trainer123", role: "trainer" },
+      { username: "schiri", password: "schiri123", role: "referee" }
     ];
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(seedUsers));
   }
 
-  const matches = parseJSON(localStorage.getItem(STORAGE_KEYS.MATCHES), null);
-  if (matches === null) {
-    localStorage.setItem(STORAGE_KEYS.MATCHES, JSON.stringify([]));
-  }
-
-  const bracket = parseJSON(localStorage.getItem(STORAGE_KEYS.BRACKET), null);
-  if (bracket === null) {
-    localStorage.setItem(STORAGE_KEYS.BRACKET, JSON.stringify(null));
-  }
+  ensureStorageValue(STORAGE_KEYS.MATCHES, []);
+  ensureStorageValue(STORAGE_KEYS.BRACKET, null);
+  ensureStorageValue(STORAGE_KEYS.GROUPS, []);
+  ensureStorageValue(STORAGE_KEYS.PLAYERS, {});
+  ensureStorageValue(STORAGE_KEYS.NOTIFICATIONS, []);
+  ensureStorageValue(STORAGE_KEYS.ARCHIVES, []);
+  ensureStorageValue(STORAGE_KEYS.THEME, "light");
 
   state.users = parseJSON(localStorage.getItem(STORAGE_KEYS.USERS), []);
   state.matches = parseJSON(localStorage.getItem(STORAGE_KEYS.MATCHES), []);
   state.bracket = parseJSON(localStorage.getItem(STORAGE_KEYS.BRACKET), null);
+  state.groups = parseJSON(localStorage.getItem(STORAGE_KEYS.GROUPS), []);
+  state.players = parseJSON(localStorage.getItem(STORAGE_KEYS.PLAYERS), {});
+  state.notifications = parseJSON(localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS), []);
+  state.archives = parseJSON(localStorage.getItem(STORAGE_KEYS.ARCHIVES), []);
+  state.theme = parseJSON(localStorage.getItem(STORAGE_KEYS.THEME), "light") || "light";
+
   if (state.bracket) {
     recalculateBracket();
+  }
+}
+
+function ensureStorageValue(key, value) {
+  if (localStorage.getItem(key) === null) {
+    localStorage.setItem(key, JSON.stringify(value));
   }
 }
 
@@ -120,6 +170,7 @@ function bindEvents() {
   el.adminForm.addEventListener("submit", handleCreateAdmin);
   el.matchForm.addEventListener("submit", handleSaveMatch);
   el.logoutBtn.addEventListener("click", handleLogout);
+  el.themeToggleBtn.addEventListener("click", toggleTheme);
   el.searchInput.addEventListener("input", (event) => {
     state.searchTerm = event.target.value.trim().toLowerCase();
     renderMatches();
@@ -129,6 +180,19 @@ function bindEvents() {
   el.loadTeamsBtn.addEventListener("click", loadTeamsFromMatches);
   el.generateBracketBtn.addEventListener("click", handleGenerateBracket);
   el.bracketBoard.addEventListener("click", handleBracketBoardClick);
+
+  el.loadGroupTeamsBtn.addEventListener("click", loadGroupTeamsFromMatches);
+  el.generateGroupsBtn.addEventListener("click", handleGenerateGroups);
+  el.transferToKoBtn.addEventListener("click", transferGroupsToKo);
+  el.groupBoard.addEventListener("input", handleGroupBoardInput);
+
+  el.playerTeamSelect.addEventListener("change", renderPlayers);
+  el.addPlayerBtn.addEventListener("click", handleAddPlayer);
+  el.playerList.addEventListener("click", handlePlayerListClick);
+
+  el.markNotificationsReadBtn.addEventListener("click", markAllNotificationsRead);
+  el.archiveTournamentBtn.addEventListener("click", archiveCurrentTournament);
+
   el.navButtons.forEach((button) => {
     button.addEventListener("click", () => setActiveView(button.dataset.view));
   });
@@ -155,6 +219,7 @@ function handleLogin(event) {
   state.currentUser = { username: user.username, role: user.role };
   localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(state.currentUser));
   el.loginForm.reset();
+  pushNotification(`Willkommen ${user.username}.`, "success");
   refreshUI();
   setMessage(el.loginMessage, "Login erfolgreich.", "success");
 }
@@ -165,6 +230,7 @@ function handleRegister(event) {
 
   const username = el.fields.registerUsername.value.trim();
   const password = el.fields.registerPassword.value;
+  const role = el.fields.registerRole.value;
 
   if (!username || !password) {
     setMessage(el.registerMessage, "Bitte alle Felder ausfuellen.", "error");
@@ -176,15 +242,20 @@ function handleRegister(event) {
     return;
   }
 
+  if (!Object.keys(ROLE_LABELS).includes(role) || role === "admin") {
+    setMessage(el.registerMessage, "Ungueltige Rolle.", "error");
+    return;
+  }
+
   if (state.users.some((u) => u.username.toLowerCase() === username.toLowerCase())) {
     setMessage(el.registerMessage, "Benutzername ist bereits vergeben.", "error");
     return;
   }
 
-  state.users.push({ username, password, role: "viewer" });
+  state.users.push({ username, password, role });
   persistUsers();
   el.registerForm.reset();
-  setMessage(el.registerMessage, "Registrierung erfolgreich. Du kannst dich jetzt einloggen.", "success");
+  setMessage(el.registerMessage, `Registrierung erfolgreich als ${ROLE_LABELS[role]}.`, "success");
 }
 
 function handleCreateAdmin(event) {
@@ -217,6 +288,7 @@ function handleCreateAdmin(event) {
   state.users.push({ username, password, role: "admin" });
   persistUsers();
   el.adminForm.reset();
+  pushNotification(`Neuer Admin ${username} erstellt.`, "info");
   setMessage(el.adminMsg, `Admin ${username} wurde erstellt.`, "success");
 }
 
@@ -224,8 +296,8 @@ function handleSaveMatch(event) {
   event.preventDefault();
   clearMessages();
 
-  if (!isAdmin()) {
-    setMessage(el.matchMessage, "Nur Admins duerfen Spiele speichern.", "error");
+  if (!canManageMatches()) {
+    setMessage(el.matchMessage, "Nur Admins oder Trainer duerfen Spiele speichern.", "error");
     return;
   }
 
@@ -256,6 +328,10 @@ function handleSaveMatch(event) {
   cancelEditMode();
   renderMatches();
   refreshSeedInputFromMatches(false);
+  refreshGroupInputFromMatches(false);
+  refreshPlayerTeams();
+  pushNotification(`Spiel geplant: ${payload.heimTeam} vs ${payload.gastTeam} am ${payload.datum} ${payload.uhrzeit}.`, "info", `match-plan-${payload.id}`);
+  checkUpcomingMatchNotifications();
   renderBracket();
   updateStats();
 }
@@ -270,7 +346,7 @@ function handleLogout() {
 }
 
 function startEditMatch(id) {
-  if (!isAdmin()) {
+  if (!canManageMatches()) {
     return;
   }
 
@@ -299,19 +375,106 @@ function cancelEditMode() {
 }
 
 function deleteMatch(id) {
-  if (!isAdmin()) {
+  if (!canManageMatches()) {
     return;
   }
 
+  const removed = state.matches.find((m) => m.id === id);
   state.matches = state.matches.filter((m) => m.id !== id);
   persistMatches();
   if (state.editingMatchId === id) {
     cancelEditMode();
   }
+
   renderMatches();
   refreshSeedInputFromMatches(false);
+  refreshGroupInputFromMatches(false);
+  refreshPlayerTeams();
   renderBracket();
   updateStats();
+
+  if (removed) {
+    pushNotification(`Spiel geloescht: ${removed.heimTeam} vs ${removed.gastTeam}.`, "info");
+  }
+}
+
+function renderMatches() {
+  const filtered = getFilteredMatches();
+  el.matchesList.innerHTML = "";
+
+  if (!filtered.length) {
+    const li = document.createElement("li");
+    li.className = "empty-state";
+    li.textContent = "Keine Spiele gefunden.";
+    el.matchesList.appendChild(li);
+    return;
+  }
+
+  filtered.forEach((match) => {
+    const li = document.createElement("li");
+
+    const details = document.createElement("div");
+    details.className = "match-details";
+    details.innerHTML = `
+      <p class="match-line"><strong>${match.heimTeam}</strong> vs. <strong>${match.gastTeam}</strong></p>
+      <p class="match-meta">${match.datum} | ${match.uhrzeit} | ${match.platz} | SR: ${match.schiri}</p>
+    `;
+
+    li.appendChild(details);
+
+    if (canManageMatches()) {
+      const actions = document.createElement("div");
+      actions.className = "item-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "secondary mini";
+      editBtn.textContent = "Bearbeiten";
+      editBtn.addEventListener("click", () => startEditMatch(match.id));
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "danger mini";
+      deleteBtn.textContent = "Loeschen";
+      deleteBtn.addEventListener("click", () => deleteMatch(match.id));
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+      li.appendChild(actions);
+    }
+
+    el.matchesList.appendChild(li);
+  });
+}
+
+function getFilteredMatches() {
+  const sorted = [...state.matches].sort((a, b) => `${a.datum} ${a.uhrzeit}`.localeCompare(`${b.datum} ${b.uhrzeit}`));
+  if (!state.searchTerm) {
+    return sorted;
+  }
+
+  return sorted.filter((match) => {
+    const haystack = [match.datum, match.uhrzeit, match.heimTeam, match.gastTeam, match.platz, match.schiri]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(state.searchTerm);
+  });
+}
+
+function exportMatches() {
+  if (!state.currentUser) {
+    setMessage(el.matchMessage, "Bitte zuerst einloggen, um zu exportieren.", "error");
+    return;
+  }
+
+  const json = JSON.stringify(state.matches, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "spiele.json";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function loadTeamsFromMatches() {
@@ -338,8 +501,8 @@ function refreshSeedInputFromMatches(onlyIfEmpty) {
 }
 
 function handleGenerateBracket() {
-  if (!isAdmin()) {
-    setMessage(el.bracketInfo, "Nur Admins duerfen den K.-o.-Baum neu generieren.", "error");
+  if (!canGenerateStructure()) {
+    setMessage(el.bracketInfo, "Nur Admins oder Trainer duerfen den K.-o.-Baum generieren.", "error");
     return;
   }
 
@@ -359,6 +522,7 @@ function handleGenerateBracket() {
 
   const modeText = mode === "random" ? "Zufallsauslosung" : "Setzliste";
   setMessage(el.bracketInfo, `Neuer K.-o.-Baum erstellt (${modeText}, ${orderedTeams.length} Teams).`, "success");
+  pushNotification(`K.-o.-Baum erstellt mit ${orderedTeams.length} Teams.`, "info");
 }
 
 function handleBracketBoardClick(event) {
@@ -373,8 +537,8 @@ function handleBracketBoardClick(event) {
 }
 
 function saveBracketResult(roundIndex, matchIndex) {
-  if (!isAdmin()) {
-    setMessage(el.bracketInfo, "Nur Admins duerfen Ergebnisse eintragen.", "error");
+  if (!canEnterResults()) {
+    setMessage(el.bracketInfo, "Nur Admins oder Schiris duerfen Ergebnisse eintragen.", "error");
     return;
   }
 
@@ -419,181 +583,7 @@ function saveBracketResult(roundIndex, matchIndex) {
   persistBracket();
   renderBracket();
   setMessage(el.bracketInfo, "Ergebnis gespeichert. Sieger wurde weitergesetzt.", "success");
-}
-
-function renderMatches() {
-  const filtered = getFilteredMatches();
-  el.matchesList.innerHTML = "";
-
-  if (!filtered.length) {
-    const li = document.createElement("li");
-    li.className = "empty-state";
-    li.textContent = "Keine Spiele gefunden.";
-    el.matchesList.appendChild(li);
-    return;
-  }
-
-  filtered.forEach((match) => {
-    const li = document.createElement("li");
-
-    const details = document.createElement("div");
-    details.className = "match-details";
-    details.innerHTML = `
-      <p class="match-line"><strong>${match.heimTeam}</strong> vs. <strong>${match.gastTeam}</strong></p>
-      <p class="match-meta">${match.datum} | ${match.uhrzeit} | ${match.platz} | SR: ${match.schiri}</p>
-    `;
-
-    li.appendChild(details);
-
-    if (isAdmin()) {
-      const actions = document.createElement("div");
-      actions.className = "item-actions";
-
-      const editBtn = document.createElement("button");
-      editBtn.type = "button";
-      editBtn.className = "secondary mini";
-      editBtn.textContent = "Bearbeiten";
-      editBtn.addEventListener("click", () => startEditMatch(match.id));
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.className = "danger mini";
-      deleteBtn.textContent = "Loeschen";
-      deleteBtn.addEventListener("click", () => deleteMatch(match.id));
-
-      actions.appendChild(editBtn);
-      actions.appendChild(deleteBtn);
-      li.appendChild(actions);
-    }
-
-    el.matchesList.appendChild(li);
-  });
-}
-
-function getFilteredMatches() {
-  const sorted = [...state.matches].sort((a, b) => `${a.datum} ${a.uhrzeit}`.localeCompare(`${b.datum} ${b.uhrzeit}`));
-  if (!state.searchTerm) {
-    return sorted;
-  }
-
-  return sorted.filter((match) => {
-    const haystack = [
-      match.datum,
-      match.uhrzeit,
-      match.heimTeam,
-      match.gastTeam,
-      match.platz,
-      match.schiri
-    ]
-      .join(" ")
-      .toLowerCase();
-    return haystack.includes(state.searchTerm);
-  });
-}
-
-function exportMatches() {
-  if (!state.currentUser) {
-    setMessage(el.matchMessage, "Bitte zuerst einloggen, um zu exportieren.", "error");
-    return;
-  }
-
-  const json = JSON.stringify(state.matches, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "spiele.json";
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-function refreshUI() {
-  const loggedIn = Boolean(state.currentUser);
-  const admin = isAdmin();
-
-  toggleElement(el.authSection, !loggedIn);
-  toggleElement(el.appNav, loggedIn);
-  el.logoutBtn.classList.toggle("hidden", !loggedIn);
-
-  if (!loggedIn) {
-    el.sessionUser.textContent = "Bitte anmelden oder registrieren";
-    el.sessionBox.querySelector(".session-label").textContent = "Nicht eingeloggt";
-    el.roleLabel.textContent = "Gast";
-    updateChampionBadge(null);
-    state.activeView = "dashboard";
-  } else {
-    el.sessionUser.textContent = `${state.currentUser.username} (${state.currentUser.role})`;
-    el.sessionBox.querySelector(".session-label").textContent = "Eingeloggt";
-    el.roleLabel.textContent = admin ? "Admin" : "Viewer";
-  }
-
-  applyViewVisibility();
-  updateNavState();
-  refreshSeedInputFromMatches(true);
-  renderMatches();
-  renderBracket();
-  updateStats();
-}
-
-function setActiveView(view) {
-  if (!["dashboard", "matches", "bracket"].includes(view)) {
-    return;
-  }
-
-  state.activeView = view;
-  applyViewVisibility();
-  updateNavState();
-  if (view === "bracket") {
-    renderBracket();
-  }
-}
-
-function applyViewVisibility() {
-  const loggedIn = Boolean(state.currentUser);
-  const admin = isAdmin();
-
-  const onDashboard = loggedIn && state.activeView === "dashboard";
-  const onMatches = loggedIn && state.activeView === "matches";
-  const onBracket = loggedIn && state.activeView === "bracket";
-
-  toggleElement(el.dashboardSection, onDashboard);
-  toggleElement(el.adminTools, onDashboard && admin);
-  toggleElement(el.adminCreator, onDashboard && admin);
-  toggleElement(el.matchesSection, onMatches);
-  toggleElement(el.bracketSection, onBracket);
-}
-
-function updateNavState() {
-  el.navButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.view === state.activeView);
-  });
-}
-
-function updateStats() {
-  const now = new Date();
-  const upcoming = state.matches.filter((match) => {
-    const date = new Date(`${match.datum}T${match.uhrzeit}`);
-    return !Number.isNaN(date.getTime()) && date >= now;
-  }).length;
-
-  el.totalMatches.textContent = String(state.matches.length);
-  el.upcomingMatches.textContent = String(upcoming);
-}
-
-function clearMessages() {
-  [el.loginMessage, el.registerMessage, el.adminMsg, el.matchMessage].forEach((node) => {
-    node.textContent = "";
-    node.className = "message";
-  });
-}
-
-function setMessage(node, text, type) {
-  node.textContent = text;
-  node.className = `message ${type}`;
-}
-
-function clearMatchForm() {
-  el.matchForm.reset();
+  pushNotification(`Ergebnis aktualisiert in Runde ${roundIndex + 1}, Match ${matchIndex + 1}.`, "success");
 }
 
 function renderBracket() {
@@ -650,62 +640,34 @@ function renderBracket() {
       const scoreRow = document.createElement("div");
       scoreRow.className = "score-row";
 
-      const homeScore = document.createElement("input");
-      homeScore.type = "number";
-      homeScore.min = "0";
-      homeScore.step = "1";
-      homeScore.id = `score-home-${roundIndex}-${matchIndex}`;
-      homeScore.className = "score-input";
-      homeScore.value = matchup.homeScore ?? "";
-
+      const homeScore = createScoreInput(`score-home-${roundIndex}-${matchIndex}`, matchup.homeScore);
+      const awayScore = createScoreInput(`score-away-${roundIndex}-${matchIndex}`, matchup.awayScore);
       const scoreSep = document.createElement("span");
       scoreSep.textContent = ":";
-
-      const awayScore = document.createElement("input");
-      awayScore.type = "number";
-      awayScore.min = "0";
-      awayScore.step = "1";
-      awayScore.id = `score-away-${roundIndex}-${matchIndex}`;
-      awayScore.className = "score-input";
-      awayScore.value = matchup.awayScore ?? "";
-
-      const penaltyRow = document.createElement("div");
-      penaltyRow.className = "score-row penalty-row";
-
-      const homePenalty = document.createElement("input");
-      homePenalty.type = "number";
-      homePenalty.min = "0";
-      homePenalty.step = "1";
-      homePenalty.id = `pen-home-${roundIndex}-${matchIndex}`;
-      homePenalty.className = "score-input";
-      homePenalty.placeholder = "E";
-      homePenalty.value = matchup.homePenalties ?? "";
-
-      const penaltySep = document.createElement("span");
-      penaltySep.textContent = ":";
-
-      const awayPenalty = document.createElement("input");
-      awayPenalty.type = "number";
-      awayPenalty.min = "0";
-      awayPenalty.step = "1";
-      awayPenalty.id = `pen-away-${roundIndex}-${matchIndex}`;
-      awayPenalty.className = "score-input";
-      awayPenalty.placeholder = "E";
-      awayPenalty.value = matchup.awayPenalties ?? "";
-
-      const scoreLocked = !isAdmin() || !isPlayableMatch(matchup);
-      homeScore.disabled = scoreLocked;
-      awayScore.disabled = scoreLocked;
-      homePenalty.disabled = scoreLocked;
-      awayPenalty.disabled = scoreLocked;
 
       scoreRow.appendChild(homeScore);
       scoreRow.appendChild(scoreSep);
       scoreRow.appendChild(awayScore);
 
+      const penaltyRow = document.createElement("div");
+      penaltyRow.className = "score-row penalty-row";
+
+      const homePenalty = createScoreInput(`pen-home-${roundIndex}-${matchIndex}`, matchup.homePenalties);
+      homePenalty.placeholder = "E";
+      const awayPenalty = createScoreInput(`pen-away-${roundIndex}-${matchIndex}`, matchup.awayPenalties);
+      awayPenalty.placeholder = "E";
+      const penaltySep = document.createElement("span");
+      penaltySep.textContent = ":";
+
       penaltyRow.appendChild(homePenalty);
       penaltyRow.appendChild(penaltySep);
       penaltyRow.appendChild(awayPenalty);
+
+      const scoreLocked = !canEnterResults() || !isPlayableMatch(matchup);
+      homeScore.disabled = scoreLocked;
+      awayScore.disabled = scoreLocked;
+      homePenalty.disabled = scoreLocked;
+      awayPenalty.disabled = scoreLocked;
 
       const saveBtn = document.createElement("button");
       saveBtn.type = "button";
@@ -715,13 +677,13 @@ function renderBracket() {
       saveBtn.textContent = "Ergebnis speichern";
       saveBtn.disabled = scoreLocked;
 
-      const winnerText = document.createElement("p");
-      winnerText.className = "winner-text";
-      winnerText.textContent = matchup.winner ? `Sieger: ${displayTeamName(matchup.winner)}` : "Sieger: offen";
-
       const penaltyHint = document.createElement("p");
       penaltyHint.className = "penalty-hint";
       penaltyHint.textContent = "Bei Remis Tore: Elfmeterschiessen eintragen.";
+
+      const winnerText = document.createElement("p");
+      winnerText.className = "winner-text";
+      winnerText.textContent = matchup.winner ? `Sieger: ${displayTeamName(matchup.winner)}` : "Sieger: offen";
 
       card.appendChild(matchTitle);
       card.appendChild(home);
@@ -739,6 +701,17 @@ function renderBracket() {
   });
 
   setMessage(el.bracketInfo, `Turniermodus: ${state.bracket.mode === "random" ? "Zufall" : "Setzliste"}. Champion: ${displayTeamName(champion)}.`, "success");
+}
+
+function createScoreInput(id, value) {
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = "0";
+  input.step = "1";
+  input.id = id;
+  input.className = "score-input";
+  input.value = value ?? "";
+  return input;
 }
 
 function createBracket(teams, mode) {
@@ -762,11 +735,7 @@ function createBracket(teams, mode) {
     rounds.push(nextRound);
   }
 
-  return {
-    mode,
-    teams,
-    rounds
-  };
+  return { mode, teams, rounds };
 }
 
 function recalculateBracket() {
@@ -848,22 +817,15 @@ function recalculateBracket() {
 }
 
 function getRoundLabel(roundIndex, totalRounds) {
-  if (totalRounds === 1) {
+  if (totalRounds === 1 || roundIndex === totalRounds - 1) {
     return "Finale";
   }
-
-  if (roundIndex === totalRounds - 1) {
-    return "Finale";
-  }
-
   if (roundIndex === totalRounds - 2) {
     return "Halbfinale";
   }
-
   if (roundIndex === totalRounds - 3) {
     return "Viertelfinale";
   }
-
   return `Runde ${roundIndex + 1}`;
 }
 
@@ -877,6 +839,575 @@ function newMatch(home, away) {
     awayPenalties: null,
     winner: null
   };
+}
+
+function loadGroupTeamsFromMatches() {
+  const teams = getUniqueTeams();
+  if (!teams.length) {
+    setMessage(el.groupMessage, "Keine Teams aus Spielen verfuegbar.", "error");
+    return;
+  }
+  el.groupTeamsInput.value = teams.join("\n");
+  setMessage(el.groupMessage, `${teams.length} Teams geladen.`, "success");
+}
+
+function refreshGroupInputFromMatches(onlyIfEmpty) {
+  if (onlyIfEmpty && el.groupTeamsInput.value.trim()) {
+    return;
+  }
+
+  const teams = getUniqueTeams();
+  if (teams.length) {
+    el.groupTeamsInput.value = teams.join("\n");
+  }
+}
+
+function handleGenerateGroups() {
+  if (!canGenerateStructure()) {
+    setMessage(el.groupMessage, "Nur Admins oder Trainer duerfen Gruppen erstellen.", "error");
+    return;
+  }
+
+  const teams = parseTeamsFromInput(el.groupTeamsInput.value);
+  const groupSize = Number(el.groupSizeInput.value);
+
+  if (teams.length < 4) {
+    setMessage(el.groupMessage, "Mindestens 4 Teams fuer Gruppenphase benoetigt.", "error");
+    return;
+  }
+
+  if (!Number.isInteger(groupSize) || groupSize < 2) {
+    setMessage(el.groupMessage, "Ungueltige Gruppengroesse.", "error");
+    return;
+  }
+
+  const teamPool = [...teams];
+  const groupCount = Math.ceil(teamPool.length / groupSize);
+  const groups = Array.from({ length: groupCount }, (_, index) => ({
+    name: `Gruppe ${String.fromCharCode(65 + index)}`,
+    teams: []
+  }));
+
+  teamPool.forEach((team, index) => {
+    const target = groups[index % groupCount];
+    target.teams.push({
+      name: team,
+      points: 0,
+      goalsFor: 0,
+      goalsAgainst: 0
+    });
+  });
+
+  state.groups = groups;
+  persistGroups();
+  renderGroups();
+  refreshPlayerTeams();
+  setMessage(el.groupMessage, `${groups.length} Gruppen erstellt.`, "success");
+  pushNotification("Gruppenphase wurde neu erstellt.", "info");
+}
+
+function renderGroups() {
+  el.groupBoard.innerHTML = "";
+
+  if (!state.groups.length) {
+    const p = document.createElement("p");
+    p.className = "message";
+    p.textContent = "Noch keine Gruppen vorhanden.";
+    el.groupBoard.appendChild(p);
+    return;
+  }
+
+  state.groups.forEach((group, groupIndex) => {
+    const card = document.createElement("article");
+    card.className = "group-card";
+
+    const title = document.createElement("h4");
+    title.textContent = group.name;
+    card.appendChild(title);
+
+    const table = document.createElement("table");
+    table.className = "group-table";
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Team</th>
+          <th>P</th>
+          <th>GF</th>
+          <th>GA</th>
+        </tr>
+      </thead>
+    `;
+
+    const body = document.createElement("tbody");
+    group.teams.forEach((team, teamIndex) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${team.name}</td>
+        <td><input type="number" min="0" data-group="${groupIndex}" data-team="${teamIndex}" data-field="points" value="${team.points}" /></td>
+        <td><input type="number" min="0" data-group="${groupIndex}" data-team="${teamIndex}" data-field="goalsFor" value="${team.goalsFor}" /></td>
+        <td><input type="number" min="0" data-group="${groupIndex}" data-team="${teamIndex}" data-field="goalsAgainst" value="${team.goalsAgainst}" /></td>
+      `;
+      body.appendChild(row);
+    });
+
+    table.appendChild(body);
+    card.appendChild(table);
+    el.groupBoard.appendChild(card);
+  });
+}
+
+function handleGroupBoardInput(event) {
+  const input = event.target;
+  const groupIndex = Number(input.dataset.group);
+  const teamIndex = Number(input.dataset.team);
+  const field = input.dataset.field;
+
+  if (!Number.isInteger(groupIndex) || !Number.isInteger(teamIndex) || !field) {
+    return;
+  }
+
+  const value = Number(input.value);
+  if (!Number.isInteger(value) || value < 0) {
+    return;
+  }
+
+  const group = state.groups[groupIndex];
+  if (!group || !group.teams[teamIndex]) {
+    return;
+  }
+
+  group.teams[teamIndex][field] = value;
+  persistGroups();
+}
+
+function transferGroupsToKo() {
+  if (!canGenerateStructure()) {
+    setMessage(el.groupMessage, "Nur Admins oder Trainer duerfen Teams in den K.-o.-Baum uebernehmen.", "error");
+    return;
+  }
+
+  if (!state.groups.length) {
+    setMessage(el.groupMessage, "Bitte zuerst Gruppen erstellen.", "error");
+    return;
+  }
+
+  const qualifiers = [];
+  state.groups.forEach((group) => {
+    const sorted = [...group.teams].sort((a, b) => {
+      if (b.points !== a.points) {
+        return b.points - a.points;
+      }
+      const aDiff = a.goalsFor - a.goalsAgainst;
+      const bDiff = b.goalsFor - b.goalsAgainst;
+      if (bDiff !== aDiff) {
+        return bDiff - aDiff;
+      }
+      if (b.goalsFor !== a.goalsFor) {
+        return b.goalsFor - a.goalsFor;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    qualifiers.push(...sorted.slice(0, Math.min(2, sorted.length)).map((entry) => entry.name));
+  });
+
+  if (qualifiers.length < 2) {
+    setMessage(el.groupMessage, "Zu wenig Qualifikanten fuer K.-o.-Baum.", "error");
+    return;
+  }
+
+  el.teamSeedInput.value = qualifiers.join("\n");
+  state.activeView = "bracket";
+  setActiveView("bracket");
+  setMessage(el.groupMessage, `${qualifiers.length} Teams in K.-o.-Setzliste uebernommen.`, "success");
+  pushNotification("Top-Teams aus Gruppen in K.-o.-Setzliste uebernommen.", "info");
+}
+
+function handleAddPlayer() {
+  if (!canManagePlayers()) {
+    setMessage(el.playerMessage, "Nur Admins oder Trainer duerfen Spieler verwalten.", "error");
+    return;
+  }
+
+  const team = el.playerTeamSelect.value;
+  const playerName = el.playerNameInput.value.trim();
+
+  if (!team) {
+    setMessage(el.playerMessage, "Bitte zuerst ein Team waehlen.", "error");
+    return;
+  }
+
+  if (!playerName) {
+    setMessage(el.playerMessage, "Bitte einen Spielernamen eingeben.", "error");
+    return;
+  }
+
+  if (!state.players[team]) {
+    state.players[team] = [];
+  }
+
+  if (state.players[team].some((entry) => entry.toLowerCase() === playerName.toLowerCase())) {
+    setMessage(el.playerMessage, "Spieler existiert bereits in diesem Team.", "error");
+    return;
+  }
+
+  state.players[team].push(playerName);
+  state.players[team].sort((a, b) => a.localeCompare(b));
+  persistPlayers();
+  el.playerNameInput.value = "";
+  renderPlayers();
+  setMessage(el.playerMessage, `${playerName} wurde zu ${team} hinzugefuegt.`, "success");
+}
+
+function handlePlayerListClick(event) {
+  const button = event.target.closest(".delete-player-btn");
+  if (!button) {
+    return;
+  }
+
+  if (!canManagePlayers()) {
+    setMessage(el.playerMessage, "Keine Berechtigung zum Loeschen von Spielern.", "error");
+    return;
+  }
+
+  const team = button.dataset.team;
+  const player = button.dataset.player;
+
+  if (!team || !player || !state.players[team]) {
+    return;
+  }
+
+  state.players[team] = state.players[team].filter((entry) => entry !== player);
+  persistPlayers();
+  renderPlayers();
+  setMessage(el.playerMessage, `${player} wurde entfernt.`, "success");
+}
+
+function refreshPlayerTeams() {
+  const teams = [...new Set([...getUniqueTeams(), ...getGroupTeams()])].sort((a, b) => a.localeCompare(b));
+  const previous = el.playerTeamSelect.value;
+  el.playerTeamSelect.innerHTML = "";
+
+  const emptyOption = document.createElement("option");
+  emptyOption.value = "";
+  emptyOption.textContent = teams.length ? "Bitte Team waehlen" : "Keine Teams vorhanden";
+  el.playerTeamSelect.appendChild(emptyOption);
+
+  teams.forEach((team) => {
+    const option = document.createElement("option");
+    option.value = team;
+    option.textContent = team;
+    el.playerTeamSelect.appendChild(option);
+  });
+
+  if (teams.includes(previous)) {
+    el.playerTeamSelect.value = previous;
+  }
+
+  renderPlayers();
+}
+
+function renderPlayers() {
+  el.playerList.innerHTML = "";
+
+  const team = el.playerTeamSelect.value;
+  if (!team) {
+    const li = document.createElement("li");
+    li.className = "empty-state";
+    li.textContent = "Kein Team ausgewaehlt.";
+    el.playerList.appendChild(li);
+    return;
+  }
+
+  const roster = state.players[team] || [];
+  if (!roster.length) {
+    const li = document.createElement("li");
+    li.className = "empty-state";
+    li.textContent = "Noch keine Spieler fuer dieses Team.";
+    el.playerList.appendChild(li);
+    return;
+  }
+
+  roster.forEach((player) => {
+    const li = document.createElement("li");
+    li.className = "list-item-row";
+
+    const span = document.createElement("span");
+    span.textContent = player;
+
+    li.appendChild(span);
+
+    if (canManagePlayers()) {
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "danger mini delete-player-btn";
+      delBtn.dataset.team = team;
+      delBtn.dataset.player = player;
+      delBtn.textContent = "Entfernen";
+      li.appendChild(delBtn);
+    }
+
+    el.playerList.appendChild(li);
+  });
+}
+
+function pushNotification(text, type = "info", key = null) {
+  if (key && state.notifications.some((entry) => entry.key === key)) {
+    return;
+  }
+
+  const notification = {
+    id: crypto.randomUUID(),
+    text,
+    type,
+    createdAt: new Date().toISOString(),
+    read: false,
+    key
+  };
+
+  state.notifications.unshift(notification);
+  state.notifications = state.notifications.slice(0, 50);
+  persistNotifications();
+  renderNotifications();
+}
+
+function markAllNotificationsRead() {
+  state.notifications = state.notifications.map((entry) => ({ ...entry, read: true }));
+  persistNotifications();
+  renderNotifications();
+}
+
+function renderNotifications() {
+  el.notificationList.innerHTML = "";
+
+  if (!state.notifications.length) {
+    const li = document.createElement("li");
+    li.className = "empty-state";
+    li.textContent = "Keine Benachrichtigungen.";
+    el.notificationList.appendChild(li);
+  } else {
+    state.notifications.forEach((entry) => {
+      const li = document.createElement("li");
+      li.className = `list-item-row notification-item ${entry.read ? "is-read" : "is-unread"}`;
+      li.innerHTML = `
+        <span>${entry.text}</span>
+        <small>${formatDate(entry.createdAt)}</small>
+      `;
+      el.notificationList.appendChild(li);
+    });
+  }
+
+  const unread = state.notifications.filter((entry) => !entry.read).length;
+  if (!state.currentUser) {
+    return;
+  }
+
+  const roleText = ROLE_LABELS[state.currentUser.role] || state.currentUser.role;
+  if (unread > 0) {
+    el.sessionUser.textContent = `${state.currentUser.username} (${roleText}) • ${unread} neu`;
+  } else {
+    el.sessionUser.textContent = `${state.currentUser.username} (${roleText})`;
+  }
+}
+
+function checkUpcomingMatchNotifications() {
+  const now = new Date();
+  state.matches.forEach((match) => {
+    const date = new Date(`${match.datum}T${match.uhrzeit}`);
+    if (Number.isNaN(date.getTime())) {
+      return;
+    }
+
+    const diffMinutes = Math.round((date.getTime() - now.getTime()) / 60000);
+    if (diffMinutes >= 0 && diffMinutes <= 120) {
+      pushNotification(
+        `Erinnerung: ${match.heimTeam} vs ${match.gastTeam} startet in ca. ${diffMinutes} Minuten.`,
+        "info",
+        `upcoming-${match.id}`
+      );
+    }
+  });
+}
+
+function archiveCurrentTournament() {
+  if (!canArchive()) {
+    setMessage(el.archiveMessage, "Nur Admins duerfen ein Turnier archivieren.", "error");
+    return;
+  }
+
+  const champion = getChampionName();
+  const snapshot = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    champion,
+    totalMatches: state.matches.length,
+    totalTeams: getUniqueTeams().length,
+    groupsCount: state.groups.length,
+    mode: state.bracket?.mode || "-"
+  };
+
+  state.archives.unshift(snapshot);
+  state.archives = state.archives.slice(0, 30);
+  persistArchives();
+  renderArchives();
+  setMessage(el.archiveMessage, "Turnier wurde archiviert.", "success");
+  pushNotification(`Turnier archiviert. Champion: ${snapshot.champion || "offen"}.`, "success");
+}
+
+function renderArchives() {
+  el.archiveList.innerHTML = "";
+
+  if (!state.archives.length) {
+    const li = document.createElement("li");
+    li.className = "empty-state";
+    li.textContent = "Noch kein Archiv vorhanden.";
+    el.archiveList.appendChild(li);
+    return;
+  }
+
+  state.archives.forEach((entry) => {
+    const li = document.createElement("li");
+    li.className = "list-item-row";
+    li.innerHTML = `
+      <span>${formatDate(entry.createdAt)} | Champion: ${entry.champion || "offen"} | Spiele: ${entry.totalMatches} | Teams: ${entry.totalTeams}</span>
+    `;
+    el.archiveList.appendChild(li);
+  });
+}
+
+function toggleTheme() {
+  state.theme = state.theme === "light" ? "dark" : "light";
+  applyTheme(state.theme);
+  localStorage.setItem(STORAGE_KEYS.THEME, JSON.stringify(state.theme));
+}
+
+function applyTheme(theme) {
+  document.body.setAttribute("data-theme", theme);
+  el.themeToggleBtn.textContent = `Theme: ${theme === "light" ? "Hell" : "Dunkel"}`;
+}
+
+function refreshUI() {
+  const loggedIn = Boolean(state.currentUser);
+
+  toggleElement(el.authSection, !loggedIn);
+  toggleElement(el.appNav, loggedIn);
+  el.logoutBtn.classList.toggle("hidden", !loggedIn);
+  el.themeToggleBtn.classList.remove("hidden");
+
+  if (!loggedIn) {
+    el.sessionUser.textContent = "Bitte anmelden oder registrieren";
+    el.sessionBox.querySelector(".session-label").textContent = "Nicht eingeloggt";
+    el.roleLabel.textContent = "Gast";
+    updateChampionBadge(null);
+    state.activeView = "dashboard";
+  } else {
+    el.sessionBox.querySelector(".session-label").textContent = "Eingeloggt";
+    el.roleLabel.textContent = ROLE_LABELS[state.currentUser.role] || state.currentUser.role;
+  }
+
+  applyViewVisibility();
+  updateNavState();
+  refreshSeedInputFromMatches(true);
+  refreshGroupInputFromMatches(true);
+  refreshPlayerTeams();
+  renderMatches();
+  renderGroups();
+  renderBracket();
+  renderNotifications();
+  renderArchives();
+  updateStats();
+  checkUpcomingMatchNotifications();
+}
+
+function setActiveView(view) {
+  if (!["dashboard", "organization", "matches", "bracket"].includes(view)) {
+    return;
+  }
+
+  state.activeView = view;
+  applyViewVisibility();
+  updateNavState();
+
+  if (view === "bracket") {
+    renderBracket();
+  }
+  if (view === "organization") {
+    renderGroups();
+    renderPlayers();
+    renderNotifications();
+    renderArchives();
+  }
+}
+
+function applyViewVisibility() {
+  const loggedIn = Boolean(state.currentUser);
+  const canMatchEdit = canManageMatches();
+
+  const onDashboard = loggedIn && state.activeView === "dashboard";
+  const onOrganization = loggedIn && state.activeView === "organization";
+  const onMatches = loggedIn && state.activeView === "matches";
+  const onBracket = loggedIn && state.activeView === "bracket";
+
+  toggleElement(el.dashboardSection, onDashboard);
+  toggleElement(el.adminTools, onDashboard && canMatchEdit);
+  toggleElement(el.adminCreator, onDashboard && isAdmin());
+  toggleElement(el.organizationSection, onOrganization);
+  toggleElement(el.matchesSection, onMatches);
+  toggleElement(el.bracketSection, onBracket);
+}
+
+function updateNavState() {
+  el.navButtons.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.view === state.activeView);
+  });
+}
+
+function updateStats() {
+  const now = new Date();
+  const upcoming = state.matches.filter((match) => {
+    const date = new Date(`${match.datum}T${match.uhrzeit}`);
+    return !Number.isNaN(date.getTime()) && date >= now;
+  }).length;
+
+  el.totalMatches.textContent = String(state.matches.length);
+  el.upcomingMatches.textContent = String(upcoming);
+}
+
+function clearMessages() {
+  [
+    el.loginMessage,
+    el.registerMessage,
+    el.adminMsg,
+    el.matchMessage,
+    el.bracketInfo,
+    el.groupMessage,
+    el.playerMessage,
+    el.archiveMessage
+  ].forEach((node) => {
+    if (!node) {
+      return;
+    }
+    node.textContent = "";
+    node.className = "message";
+  });
+}
+
+function setMessage(node, text, type) {
+  node.textContent = text;
+  node.className = `message ${type}`;
+}
+
+function clearMatchForm() {
+  el.matchForm.reset();
+}
+
+function getUniqueTeams() {
+  const allTeams = state.matches.flatMap((match) => [match.heimTeam, match.gastTeam]);
+  return [...new Set(allTeams.map((name) => name.trim()).filter(Boolean))];
+}
+
+function getGroupTeams() {
+  return state.groups.flatMap((group) => group.teams.map((team) => team.name));
 }
 
 function parseTeamsFromInput(input) {
@@ -904,11 +1435,6 @@ function shuffle(items) {
     [items[index], items[randomIndex]] = [items[randomIndex], items[index]];
   }
   return items;
-}
-
-function getUniqueTeams() {
-  const allTeams = state.matches.flatMap((match) => [match.heimTeam, match.gastTeam]);
-  return [...new Set(allTeams.map((name) => name.trim()).filter(Boolean))];
 }
 
 function nextPowerOfTwo(value) {
@@ -963,12 +1489,60 @@ function updateChampionBadge(champion) {
   el.championBadge.textContent = `Champion: ${champion}`;
 }
 
+function getChampionName() {
+  if (!state.bracket?.rounds?.length) {
+    return null;
+  }
+  const lastRound = state.bracket.rounds[state.bracket.rounds.length - 1];
+  return lastRound[0]?.winner || null;
+}
+
 function isPlayableMatch(match) {
   return Boolean(match.home && match.away && match.home !== "BYE" && match.away !== "BYE");
 }
 
+function currentRole() {
+  return state.currentUser?.role || "viewer";
+}
+
 function isAdmin() {
-  return state.currentUser?.role === "admin";
+  return currentRole() === "admin";
+}
+
+function isTrainer() {
+  return currentRole() === "trainer";
+}
+
+function isReferee() {
+  return currentRole() === "referee";
+}
+
+function canManageMatches() {
+  return isAdmin() || isTrainer();
+}
+
+function canGenerateStructure() {
+  return isAdmin() || isTrainer();
+}
+
+function canEnterResults() {
+  return isAdmin() || isReferee();
+}
+
+function canManagePlayers() {
+  return isAdmin() || isTrainer();
+}
+
+function canArchive() {
+  return isAdmin();
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
 }
 
 function persistUsers() {
@@ -981,6 +1555,22 @@ function persistMatches() {
 
 function persistBracket() {
   localStorage.setItem(STORAGE_KEYS.BRACKET, JSON.stringify(state.bracket));
+}
+
+function persistGroups() {
+  localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(state.groups));
+}
+
+function persistPlayers() {
+  localStorage.setItem(STORAGE_KEYS.PLAYERS, JSON.stringify(state.players));
+}
+
+function persistNotifications() {
+  localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(state.notifications));
+}
+
+function persistArchives() {
+  localStorage.setItem(STORAGE_KEYS.ARCHIVES, JSON.stringify(state.archives));
 }
 
 function toggleElement(node, visible) {

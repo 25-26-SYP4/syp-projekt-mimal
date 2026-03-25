@@ -19,12 +19,14 @@
       <div class="session-box" id="sessionBox">
         <p class="session-label">Nicht eingeloggt</p>
         <p class="session-user" id="sessionUser">Bitte anmelden oder registrieren</p>
+        <button type="button" id="themeToggleBtn" class="secondary hidden">Theme: Hell</button>
         <button type="button" id="logoutBtn" class="secondary hidden">Logout</button>
       </div>
     </header>
 
     <nav class="app-nav hidden" id="appNav" aria-label="Hauptnavigation">
       <button type="button" class="nav-btn is-active" data-view="dashboard">Dashboard</button>
+      <button type="button" class="nav-btn" data-view="organization">Organisation</button>
       <button type="button" class="nav-btn" data-view="matches">Spiele</button>
       <button type="button" class="nav-btn" data-view="bracket">Turnierbaum</button>
     </nav>
@@ -54,6 +56,13 @@
 
           <label for="registerPassword">Passwort</label>
           <input id="registerPassword" name="password" type="password" placeholder="Mind. 6 Zeichen" required />
+
+          <label for="registerRole">Rolle</label>
+          <select id="registerRole" name="role">
+            <option value="viewer">Zuschauer</option>
+            <option value="trainer">Trainer</option>
+            <option value="referee">Schiri</option>
+          </select>
 
           <div class="actions full-width">
             <button type="submit">Account erstellen</button>
@@ -124,6 +133,61 @@
         </div>
       </form>
       <p id="adminMsg" class="message"></p>
+    </section>
+
+    <section class="card hidden" id="organizationSection" data-view="organization">
+      <h2>Organisation</h2>
+
+      <article class="panel-block">
+        <h3>Gruppenphase und K.-o.-Uebergang</h3>
+        <div class="form-grid compact">
+          <label for="groupSizeInput">Teams pro Gruppe</label>
+          <input id="groupSizeInput" type="number" min="2" max="8" value="4" />
+
+          <label for="groupTeamsInput">Teams (eine Zeile pro Team)</label>
+          <textarea id="groupTeamsInput" rows="6" placeholder="Team A&#10;Team B&#10;Team C"></textarea>
+        </div>
+        <div class="actions">
+          <button type="button" id="loadGroupTeamsBtn" class="secondary">Aus Spielen laden</button>
+          <button type="button" id="generateGroupsBtn">Gruppen erstellen</button>
+          <button type="button" id="transferToKoBtn" class="secondary">Top 2 je Gruppe in K.-o.</button>
+        </div>
+        <p id="groupMessage" class="message"></p>
+        <div id="groupBoard" class="group-board"></div>
+      </article>
+
+      <article class="panel-block">
+        <h3>Spielerverwaltung</h3>
+        <div class="form-grid compact">
+          <label for="playerTeamSelect">Team</label>
+          <select id="playerTeamSelect"></select>
+
+          <label for="playerNameInput">Spielername</label>
+          <input id="playerNameInput" type="text" placeholder="Max Mustermann" />
+        </div>
+        <div class="actions">
+          <button type="button" id="addPlayerBtn">Spieler hinzufuegen</button>
+        </div>
+        <p id="playerMessage" class="message"></p>
+        <ul id="playerList" class="simple-list"></ul>
+      </article>
+
+      <article class="panel-block">
+        <h3>Benachrichtigungen</h3>
+        <div class="actions">
+          <button type="button" id="markNotificationsReadBtn" class="secondary">Alle als gelesen markieren</button>
+        </div>
+        <ul id="notificationList" class="simple-list"></ul>
+      </article>
+
+      <article class="panel-block">
+        <h3>Turnier-Archiv</h3>
+        <div class="actions">
+          <button type="button" id="archiveTournamentBtn">Aktuelles Turnier archivieren</button>
+        </div>
+        <p id="archiveMessage" class="message"></p>
+        <ul id="archiveList" class="simple-list"></ul>
+      </article>
     </section>
 
     <section class="card hidden" id="matchesSection" data-view="matches">

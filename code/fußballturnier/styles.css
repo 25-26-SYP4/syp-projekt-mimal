@@ -15,6 +15,23 @@
   --error: #b73b3b;
 }
 
+body[data-theme="dark"] {
+  --bg-a: #0f1720;
+  --bg-b: #1f2937;
+  --surface: #121925;
+  --surface-strong: #1b2534;
+  --text: #e8edf3;
+  --muted: #9eb0c2;
+  --border: #2f3b4d;
+  --primary: #1a9988;
+  --primary-hover: #14786b;
+  --secondary: #334155;
+  --secondary-hover: #475569;
+  --danger: #be4141;
+  --success: #39a66a;
+  --error: #dd5959;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -103,6 +120,8 @@ body {
   border-radius: 14px;
   padding: 0.8rem;
   backdrop-filter: blur(5px);
+  display: grid;
+  gap: 0.45rem;
 }
 
 .session-label {
@@ -111,6 +130,11 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   opacity: 0.92;
+}
+
+body[data-theme="dark"] .champion-badge {
+  color: #fff4b2;
+  border-color: rgba(255, 224, 120, 0.7);
 }
 
 .session-user {
@@ -307,6 +331,88 @@ button.mini {
   margin: 0.35rem 0 0;
   font-size: 1.3rem;
   font-weight: 700;
+}
+
+.panel-block {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.8rem;
+  margin-top: 0.8rem;
+  background: var(--surface);
+}
+
+.panel-block h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+.group-board {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.group-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  padding: 0.7rem;
+}
+
+.group-card h4 {
+  margin: 0 0 0.5rem;
+}
+
+.group-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.group-table th,
+.group-table td {
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  padding: 0.35rem;
+}
+
+.group-table td input {
+  min-width: 58px;
+  padding: 0.35rem;
+}
+
+.simple-list {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.list-item-row {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0.55rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface-strong);
+}
+
+.notification-item.is-unread {
+  border-color: #4d85b7;
+  background: rgba(77, 133, 183, 0.1);
+}
+
+.notification-item.is-read {
+  opacity: 0.8;
+}
+
+.notification-item small {
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .top-row {
