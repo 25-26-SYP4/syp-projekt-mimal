@@ -214,7 +214,14 @@ function displaySearchResults(suchtext) {
       ${spiel.datum} ${spiel.uhrzeit} | Platz: ${spiel.platz} | SR: ${spiel.schiri}
       ${isAdmin ? `<button onclick="editSpiel(${index})">Bearbeiten</button>
                    <button onclick="deleteSpiel(${index})">Löschen</button>` : ""}
+    setTimeout(() => {
+      li.style.opacity = "0";
+      li.style.transform = "translateX(20px)";
+      li.style.transition = "all 0.3s ease";
+    }, 50);
     `;
     liste.appendChild(li);
   });
+
+
 }
