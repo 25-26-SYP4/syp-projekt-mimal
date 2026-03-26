@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fußballturnier Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -23,6 +26,24 @@
         <button type="button" id="logoutBtn" class="secondary hidden">Logout</button>
       </div>
     </header>
+
+    <section class="quick-start" id="quickStart">
+      <article class="quick-step">
+        <p class="step-number">Schritt 1</p>
+        <h3>Einloggen oder registrieren</h3>
+        <p>Waehle eine Rolle und melde dich an. Admin ist fuer komplette Turnierleitung gedacht.</p>
+      </article>
+      <article class="quick-step">
+        <p class="step-number">Schritt 2</p>
+        <h3>Spielplan anlegen</h3>
+        <p>Erstelle Spiele mit Datum, Uhrzeit und Platz. Teams werden automatisch fuer weitere Bereiche vorgeschlagen.</p>
+      </article>
+      <article class="quick-step">
+        <p class="step-number">Schritt 3</p>
+        <h3>Gruppen und K.-o. starten</h3>
+        <p>Baue zuerst Gruppen oder direkt den Turnierbaum auf, trage Ergebnisse ein und teile die Public-Ansicht.</p>
+      </article>
+    </section>
 
     <nav class="app-nav hidden" id="appNav" aria-label="Hauptnavigation">
       <button type="button" class="nav-btn is-active" data-view="dashboard">Dashboard</button>
@@ -45,9 +66,10 @@
     <section class="grid auth-grid" id="authSection">
       <article class="card">
         <h2>Login</h2>
+        <p class="section-intro">Melde dich mit deiner Rolle an, um passende Funktionen freizuschalten.</p>
         <form id="loginForm" class="form-grid" autocomplete="on">
           <label for="loginUsername">Benutzername</label>
-          <input id="loginUsername" name="username" type="text" placeholder="z. B. admin" required />
+          <input id="loginUsername" name="username" type="text" placeholder="z. B. admin oder trainer" required />
 
           <label for="loginPassword">Passwort</label>
           <input id="loginPassword" name="password" type="password" placeholder="Passwort" required />
@@ -61,6 +83,7 @@
 
       <article class="card">
         <h2>Registrieren</h2>
+        <p class="section-intro">Erstelle schnell einen neuen Zugang fuer Trainer, Schiri oder Zuschauer.</p>
         <form id="registerForm" class="form-grid" autocomplete="on">
           <label for="registerUsername">Benutzername</label>
           <input id="registerUsername" name="username" type="text" placeholder="Neuer Benutzername" required />
@@ -74,6 +97,7 @@
             <option value="trainer">Trainer</option>
             <option value="referee">Schiri</option>
           </select>
+          <p class="input-hint full-width">Hinweis: Admin-Konten koennen nur im Dashboard von bestehenden Admins erstellt werden.</p>
 
           <div class="actions full-width">
             <button type="submit">Account erstellen</button>
@@ -85,6 +109,7 @@
 
     <section class="card hidden" id="dashboardSection" data-view="dashboard">
       <h2>Dashboard</h2>
+      <p class="section-intro">Der zentrale Status fuer dein Turnier in Echtzeit.</p>
       <div class="stats-grid">
         <div class="stat-tile">
           <p class="stat-label">Gesamtspiele</p>
@@ -103,6 +128,7 @@
 
     <section class="card hidden" id="adminTools" data-view="dashboard">
       <h2>Spiel anlegen / bearbeiten</h2>
+      <p class="section-intro">Trage hier neue Begegnungen ein. Felder mit Teamnamen bieten automatische Vorschlaege.</p>
       <form id="matchForm" class="form-grid" autocomplete="off">
         <label for="spielDatum">Datum</label>
         <input id="spielDatum" type="date" required />
@@ -111,16 +137,19 @@
         <input id="spielUhrzeit" type="time" required />
 
         <label for="heimTeam">Heimteam</label>
-        <input id="heimTeam" type="text" placeholder="Team A" required />
+        <input id="heimTeam" type="text" list="teamSuggestions" placeholder="z. B. FC Nord" required />
 
         <label for="gastTeam">Gastteam</label>
-        <input id="gastTeam" type="text" placeholder="Team B" required />
+        <input id="gastTeam" type="text" list="teamSuggestions" placeholder="z. B. SV Sued" required />
 
         <label for="spielPlatz">Platz</label>
         <input id="spielPlatz" type="text" placeholder="Platz 1" required />
 
         <label for="spielSchiri">Schiedsrichter</label>
-        <input id="spielSchiri" type="text" placeholder="Name" required />
+        <input id="spielSchiri" type="text" placeholder="z. B. M. Berger" required />
+
+        <datalist id="teamSuggestions"></datalist>
+        <p class="input-hint full-width">Tipp: Datum und Uhrzeit werden automatisch vorausgefuellt und koennen jederzeit angepasst werden.</p>
 
         <div class="actions full-width">
           <button type="submit" id="saveMatchBtn">Spiel speichern</button>
@@ -148,9 +177,11 @@
 
     <section class="card hidden" id="organizationSection" data-view="organization">
       <h2>Organisation</h2>
+      <p class="section-intro">Hier steuerst du Turnierlogik, Kader, Awards, Benachrichtigungen und Archiv.</p>
 
       <article class="panel-block">
         <h3>Gruppenphase und K.-o.-Uebergang</h3>
+        <p class="panel-note">Lege Gruppen an, trage Punkte ein und uebernimm die besten Teams direkt in den K.-o.-Baum.</p>
         <div class="form-grid compact">
           <label for="groupSizeInput">Teams pro Gruppe</label>
           <input id="groupSizeInput" type="number" min="2" max="8" value="4" />
@@ -169,6 +200,7 @@
 
       <article class="panel-block">
         <h3>Spielerverwaltung</h3>
+        <p class="panel-note">Jedes Team kann einen eigenen Kader erhalten. Perfekt fuer MVP- und Award-Auswahl.</p>
         <div class="form-grid compact">
           <label for="playerTeamSelect">Team</label>
           <select id="playerTeamSelect"></select>
@@ -185,6 +217,7 @@
 
       <article class="panel-block">
         <h3>Benachrichtigungen</h3>
+        <p class="panel-note">Wichtige Ereignisse wie Spielplanung, Ergebnisse und Erinnerungen werden hier gesammelt.</p>
         <div class="actions">
           <button type="button" id="markNotificationsReadBtn" class="secondary">Alle als gelesen markieren</button>
         </div>
@@ -193,6 +226,7 @@
 
       <article class="panel-block">
         <h3>Turnier-Archiv</h3>
+        <p class="panel-note">Speichere den aktuellen Stand als historische Saison- oder Turnieraufnahme.</p>
         <div class="actions">
           <button type="button" id="archiveTournamentBtn">Aktuelles Turnier archivieren</button>
         </div>
@@ -202,6 +236,7 @@
 
       <article class="panel-block">
         <h3>Awards und MVP</h3>
+        <p class="panel-note">Dokumentiere Auszeichnungen fuer die Siegerehrung und Public-Kommunikation.</p>
         <div class="form-grid compact">
           <label for="awardMvpInput">MVP</label>
           <input id="awardMvpInput" type="text" placeholder="Name" />
@@ -221,6 +256,7 @@
 
       <article class="panel-block">
         <h3>Mediathek</h3>
+        <p class="panel-note">Lade Turnierbilder hoch und praesentiere Highlights in Galerieform.</p>
         <div class="form-grid compact">
           <label for="mediaTitleInput">Titel</label>
           <input id="mediaTitleInput" type="text" placeholder="z. B. Siegerfoto" />
@@ -259,6 +295,7 @@
       <div class="top-row">
         <input type="text" id="searchInput" class="search" placeholder="Suche: Team, Datum, Platz, Schiri" />
       </div>
+      <p class="input-hint">Die Suche filtert live nach allen sichtbaren Begriffen.</p>
 
       <ul id="spiele" class="spiele-liste"></ul>
     </section>
@@ -284,6 +321,7 @@
           <button type="button" id="generateBracketBtn">K.-o.-Baum generieren</button>
         </div>
       </div>
+      <p class="input-hint">Bei Gleichstand im regulären Ergebnis kannst du direkt Elfmeterschiessen eintragen.</p>
       <p id="bracketInfo" class="message"></p>
       <div id="bracketBoard" class="bracket-board"></div>
     </section>
