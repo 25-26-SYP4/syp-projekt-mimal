@@ -12,6 +12,9 @@ const STORAGE_KEYS = {
   THEME: "ft_theme"
 };
 
+const API_BASE = "http://localhost:3000/api";
+let authToken = localStorage.getItem("ft_auth_token") || "";
+
 const ROLE_LABELS = {
   admin: "Admin",
   trainer: "Trainer",
@@ -114,6 +117,7 @@ const el = {
   addMediaBtn: document.getElementById("addMediaBtn"),
   mediaMessage: document.getElementById("mediaMessage"),
   mediaGallery: document.getElementById("mediaGallery"),
+  teamSuggestions: document.getElementById("teamSuggestions"),
   fields: {
     loginUsername: document.getElementById("loginUsername"),
     loginPassword: document.getElementById("loginPassword"),
@@ -133,76 +137,58 @@ const el = {
 
 init();
 
-function init() {
-  initializeStorage();
+async function init() {
+  await initializeStorage();
   restoreSession();
   applyTheme(state.theme);
   bindEvents();
   handleHashRouting();
+  setDefaultMatchDateTime();
   refreshUI();
 }
 
-function initializeStorage() {
-  const users = parseJSON(localStorage.getItem(STORAGE_KEYS.USERS), []);
-  if (!users.length) {
-    const seedUsers = [
-      { username: "admin", password: "admin123", role: "admin" },
-      { username: "gast", password: "gast123", role: "viewer" },
-      { username: "trainer", password: "trainer123", role: "trainer" },
-      { username: "schiri", password: "schiri123", role: "referee" }
-    ];
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(seedUsers));
-  }
-
-  ensureStorageValue(STORAGE_KEYS.MATCHES, []);
-  ensureStorageValue(STORAGE_KEYS.BRACKET, null);
-  ensureStorageValue(STORAGE_KEYS.GROUPS, []);
-  ensureStorageValue(STORAGE_KEYS.PLAYERS, {});
-  ensureStorageValue(STORAGE_KEYS.NOTIFICATIONS, []);
-  ensureStorageValue(STORAGE_KEYS.ARCHIVES, []);
-  ensureStorageValue(STORAGE_KEYS.AWARDS, {
-    mvp: "",
-    topScorer: "",
-    fairPlayTeam: ""
-  });
-  ensureStorageValue(STORAGE_KEYS.MEDIA, []);
-  ensureStorageValue(STORAGE_KEYS.THEME, "light");
-
-  state.users = parseJSON(localStorage.getItem(STORAGE_KEYS.USERS), []);
-  state.matches = parseJSON(localStorage.getItem(STORAGE_KEYS.MATCHES), []);
-  state.bracket = parseJSON(localStorage.getItem(STORAGE_KEYS.BRACKET), null);
-  state.groups = parseJSON(localStorage.getItem(STORAGE_KEYS.GROUPS), []);
-  state.players = parseJSON(localStorage.getItem(STORAGE_KEYS.PLAYERS), {});
-  state.notifications = parseJSON(localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS), []);
-  state.archives = parseJSON(localStorage.getItem(STORAGE_KEYS.ARCHIVES), []);
-  state.awards = parseJSON(localStorage.getItem(STORAGE_KEYS.AWARDS), {
-    mvp: "",
-    topScorer: "",
-    fairPlayTeam: ""
-  });
-  state.media = parseJSON(localStorage.getItem(STORAGE_KEYS.MEDIA), []);
+async function initializeStorage() {
   state.theme = parseJSON(localStorage.getItem(STORAGE_KEYS.THEME), "light") || "light";
+
+  try {
+    const bootstrap = await apiRequest("/bootstrap", { method: "GET", requireAuth: false });
+    state.users = bootstrap.users || [];
+    state.matches = bootstrap.state?.matches || [];
+    state.bracket = bootstrap.state?.bracket || null;
+    state.groups = bootstrap.state?.groups || [];
+    state.players = bootstrap.state?.players || {};
+    state.notifications = bootstrap.state?.notifications || [];
+    state.archives = bootstrap.state?.archives || [];
+    state.awards = bootstrap.state?.awards || { mvp: "", topScorer: "", fairPlayTeam: "" };
+    state.media = bootstrap.state?.media || [];
+    state.currentUser = bootstrap.currentUser || null;
+
+    if (!state.currentUser) {
+      authToken = "";
+      localStorage.removeItem("ft_auth_token");
+    }
+  } catch (_error) {
+    state.users = [];
+    state.matches = [];
+    state.bracket = null;
+    state.groups = [];
+    state.players = {};
+    state.notifications = [];
+    state.archives = [];
+    state.awards = { mvp: "", topScorer: "", fairPlayTeam: "" };
+    state.media = [];
+    state.currentUser = null;
+  }
 
   if (state.bracket) {
     recalculateBracket();
   }
 }
 
-function ensureStorageValue(key, value) {
-  if (localStorage.getItem(key) === null) {
-    localStorage.setItem(key, JSON.stringify(value));
-  }
-}
-
 function restoreSession() {
-  const saved = parseJSON(localStorage.getItem(STORAGE_KEYS.SESSION), null);
-  if (!saved) {
+  if (!state.currentUser) {
     state.currentUser = null;
-    return;
   }
-
-  const userExists = state.users.find((u) => u.username === saved.username && u.role === saved.role);
-  state.currentUser = userExists || null;
 }
 
 function bindEvents() {
@@ -247,7 +233,7 @@ function bindEvents() {
   });
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
   clearMessages();
 
@@ -259,21 +245,27 @@ function handleLogin(event) {
     return;
   }
 
-  const user = state.users.find((entry) => entry.username === username && entry.password === password);
-  if (!user) {
-    setMessage(el.loginMessage, "Login fehlgeschlagen. Zugangsdaten pruefen.", "error");
-    return;
-  }
+  try {
+    const result = await apiRequest("/auth/login", {
+      method: "POST",
+      requireAuth: false,
+      body: { username, password }
+    });
 
-  state.currentUser = { username: user.username, role: user.role };
-  localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(state.currentUser));
-  el.loginForm.reset();
-  pushNotification(`Willkommen ${user.username}.`, "success");
-  refreshUI();
-  setMessage(el.loginMessage, "Login erfolgreich.", "success");
+    authToken = result.token;
+    localStorage.setItem("ft_auth_token", authToken);
+    state.currentUser = result.user;
+    await initializeStorage();
+    el.loginForm.reset();
+    pushNotification(`Willkommen ${result.user.username}.`, "success");
+    refreshUI();
+    setMessage(el.loginMessage, "Login erfolgreich.", "success");
+  } catch (error) {
+    setMessage(el.loginMessage, error.message || "Login fehlgeschlagen.", "error");
+  }
 }
 
-function handleRegister(event) {
+async function handleRegister(event) {
   event.preventDefault();
   clearMessages();
 
@@ -301,13 +293,21 @@ function handleRegister(event) {
     return;
   }
 
-  state.users.push({ username, password, role });
-  persistUsers();
-  el.registerForm.reset();
-  setMessage(el.registerMessage, `Registrierung erfolgreich als ${ROLE_LABELS[role]}.`, "success");
+  try {
+    const result = await apiRequest("/auth/register", {
+      method: "POST",
+      requireAuth: false,
+      body: { username, password, role }
+    });
+    state.users.push(result.user);
+    el.registerForm.reset();
+    setMessage(el.registerMessage, `Registrierung erfolgreich als ${ROLE_LABELS[result.user.role]}.`, "success");
+  } catch (error) {
+    setMessage(el.registerMessage, error.message || "Registrierung fehlgeschlagen.", "error");
+  }
 }
 
-function handleCreateAdmin(event) {
+async function handleCreateAdmin(event) {
   event.preventDefault();
   clearMessages();
 
@@ -334,11 +334,18 @@ function handleCreateAdmin(event) {
     return;
   }
 
-  state.users.push({ username, password, role: "admin" });
-  persistUsers();
-  el.adminForm.reset();
-  pushNotification(`Neuer Admin ${username} erstellt.`, "info");
-  setMessage(el.adminMsg, `Admin ${username} wurde erstellt.`, "success");
+  try {
+    const result = await apiRequest("/auth/admin", {
+      method: "POST",
+      body: { username, password }
+    });
+    state.users.push(result.user);
+    el.adminForm.reset();
+    pushNotification(`Neuer Admin ${result.user.username} erstellt.`, "info");
+    setMessage(el.adminMsg, `Admin ${result.user.username} wurde erstellt.`, "success");
+  } catch (error) {
+    setMessage(el.adminMsg, error.message || "Admin konnte nicht erstellt werden.", "error");
+  }
 }
 
 function handleSaveMatch(event) {
@@ -354,14 +361,37 @@ function handleSaveMatch(event) {
     id: state.editingMatchId || crypto.randomUUID(),
     datum: el.fields.spielDatum.value,
     uhrzeit: el.fields.spielUhrzeit.value,
-    heimTeam: el.fields.heimTeam.value.trim(),
-    gastTeam: el.fields.gastTeam.value.trim(),
+    heimTeam: normalizeName(el.fields.heimTeam.value),
+    gastTeam: normalizeName(el.fields.gastTeam.value),
     platz: el.fields.spielPlatz.value.trim(),
-    schiri: el.fields.spielSchiri.value.trim()
+    schiri: normalizeName(el.fields.spielSchiri.value)
   };
 
   if (!payload.datum || !payload.uhrzeit || !payload.heimTeam || !payload.gastTeam || !payload.platz || !payload.schiri) {
-    setMessage(el.matchMessage, "Bitte alle Match-Felder ausfuellen.", "error");
+    setMessage(el.matchMessage, "Bitte alle Felder vollstaendig ausfuellen (Datum, Uhrzeit, Teams, Platz, Schiri).", "error");
+    return;
+  }
+
+  if (payload.heimTeam.toLowerCase() === payload.gastTeam.toLowerCase()) {
+    setMessage(el.matchMessage, "Heim- und Gastteam muessen unterschiedlich sein.", "error");
+    return;
+  }
+
+  const duplicate = state.matches.find((m) => {
+    if (state.editingMatchId && m.id === state.editingMatchId) {
+      return false;
+    }
+    return (
+      m.datum === payload.datum &&
+      m.uhrzeit === payload.uhrzeit &&
+      m.platz.toLowerCase() === payload.platz.toLowerCase() &&
+      ((m.heimTeam.toLowerCase() === payload.heimTeam.toLowerCase() && m.gastTeam.toLowerCase() === payload.gastTeam.toLowerCase()) ||
+        (m.heimTeam.toLowerCase() === payload.gastTeam.toLowerCase() && m.gastTeam.toLowerCase() === payload.heimTeam.toLowerCase()))
+    );
+  });
+
+  if (duplicate) {
+    setMessage(el.matchMessage, "Dieses Spiel existiert bereits mit gleicher Zeit und gleichem Platz.", "error");
     return;
   }
 
@@ -378,6 +408,7 @@ function handleSaveMatch(event) {
   renderMatches();
   refreshSeedInputFromMatches(false);
   refreshGroupInputFromMatches(false);
+  renderTeamSuggestions();
   refreshPlayerTeams();
   pushNotification(`Spiel geplant: ${payload.heimTeam} vs ${payload.gastTeam} am ${payload.datum} ${payload.uhrzeit}.`, "info", `match-plan-${payload.id}`);
   checkUpcomingMatchNotifications();
@@ -388,7 +419,9 @@ function handleSaveMatch(event) {
 function handleLogout() {
   state.currentUser = null;
   state.editingMatchId = null;
-  localStorage.removeItem(STORAGE_KEYS.SESSION);
+  apiRequest("/auth/logout", { method: "POST" }).catch(() => {});
+  authToken = "";
+  localStorage.removeItem("ft_auth_token");
   clearMatchForm();
   clearMessages();
   refreshUI();
@@ -419,6 +452,7 @@ function startEditMatch(id) {
 function cancelEditMode() {
   state.editingMatchId = null;
   clearMatchForm();
+  setDefaultMatchDateTime();
   el.saveMatchBtn.textContent = "Spiel speichern";
   el.cancelEditBtn.classList.add("hidden");
 }
@@ -1649,6 +1683,7 @@ function refreshUI() {
   updateNavState();
   refreshSeedInputFromMatches(true);
   refreshGroupInputFromMatches(true);
+  renderTeamSuggestions();
   refreshPlayerTeams();
   renderMatches();
   renderLiveCenter();
@@ -1774,6 +1809,47 @@ function getUniqueTeams() {
 
 function getGroupTeams() {
   return state.groups.flatMap((group) => group.teams.map((team) => team.name));
+}
+
+function renderTeamSuggestions() {
+  if (!el.teamSuggestions) {
+    return;
+  }
+
+  const teams = [...new Set([...getUniqueTeams(), ...getGroupTeams()])].sort((a, b) => a.localeCompare(b));
+  el.teamSuggestions.innerHTML = "";
+  teams.forEach((team) => {
+    const option = document.createElement("option");
+    option.value = team;
+    el.teamSuggestions.appendChild(option);
+  });
+}
+
+function setDefaultMatchDateTime() {
+  if (!el.fields.spielDatum || !el.fields.spielUhrzeit) {
+    return;
+  }
+  if (el.fields.spielDatum.value || el.fields.spielUhrzeit.value) {
+    return;
+  }
+
+  const date = new Date();
+  date.setMinutes(0, 0, 0);
+  date.setHours(date.getHours() + 1);
+
+  const isoDate = date.toISOString().slice(0, 10);
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+
+  el.fields.spielDatum.value = isoDate;
+  el.fields.spielUhrzeit.value = `${hh}:${mm}`;
+}
+
+function normalizeName(value) {
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/(^|\s)(\p{L})/gu, (match) => match.toUpperCase());
 }
 
 function parseTeamsFromInput(input) {
@@ -1912,39 +1988,79 @@ function formatDate(value) {
 }
 
 function persistUsers() {
-  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(state.users));
+  return;
 }
 
 function persistMatches() {
-  localStorage.setItem(STORAGE_KEYS.MATCHES, JSON.stringify(state.matches));
+  apiSaveState("matches", state.matches);
 }
 
 function persistBracket() {
-  localStorage.setItem(STORAGE_KEYS.BRACKET, JSON.stringify(state.bracket));
+  apiSaveState("bracket", state.bracket);
 }
 
 function persistGroups() {
-  localStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(state.groups));
+  apiSaveState("groups", state.groups);
 }
 
 function persistPlayers() {
-  localStorage.setItem(STORAGE_KEYS.PLAYERS, JSON.stringify(state.players));
+  apiSaveState("players", state.players);
 }
 
 function persistNotifications() {
-  localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(state.notifications));
+  apiSaveState("notifications", state.notifications);
 }
 
 function persistArchives() {
-  localStorage.setItem(STORAGE_KEYS.ARCHIVES, JSON.stringify(state.archives));
+  apiSaveState("archives", state.archives);
 }
 
 function persistAwards() {
-  localStorage.setItem(STORAGE_KEYS.AWARDS, JSON.stringify(state.awards));
+  apiSaveState("awards", state.awards);
 }
 
 function persistMedia() {
-  localStorage.setItem(STORAGE_KEYS.MEDIA, JSON.stringify(state.media));
+  apiSaveState("media", state.media);
+}
+
+function apiSaveState(key, value) {
+  if (!authToken || !state.currentUser) {
+    return;
+  }
+
+  apiRequest(`/state/${key}`, {
+    method: "PUT",
+    body: { value }
+  }).catch(() => {});
+}
+
+async function apiRequest(pathname, options = {}) {
+  const { method = "GET", body, requireAuth = true } = options;
+
+  const headers = {
+    "Content-Type": "application/json"
+  };
+
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+  }
+
+  if (requireAuth && !authToken) {
+    throw new Error("Bitte zuerst einloggen.");
+  }
+
+  const response = await fetch(`${API_BASE}${pathname}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || "Serverfehler");
+  }
+
+  return data;
 }
 
 function toggleElement(node, visible) {
