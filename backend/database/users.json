@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "password_hash": "$2a$10$WGkvfJ6A4/fF2mkgStwnxuoHwBnhgYwOclgkRIVk7OOp9RChIvNU2",
+    "role": "admin",
+    "created_at": "2026-03-26T07:54:29.532Z"
+  },
+  {
+    "id": 2,
+    "username": "gast",
+    "password_hash": "$2a$10$0RvwAWAe2hor4hvQ2xb53uj3CPZBkOiWi9CBtnQfjIcUKTlfM/p06",
+    "role": "viewer",
+    "created_at": "2026-03-26T07:54:29.532Z"
+  },
+  {
+    "id": 3,
+    "username": "trainer",
+    "password_hash": "$2a$10$hERYQC9ERCNUgDdHsXLK0.WcsiK6SjuA9jWjI/EBniS6ypT4EyXy2",
+    "role": "trainer",
+    "created_at": "2026-03-26T07:54:29.532Z"
+  },
+  {
+    "id": 4,
+    "username": "schiri",
+    "password_hash": "$2a$10$zDtQLD97dUWfDpJWrHpZJeAgqMoXDVghNQ7KwGylyBhgjIawiZQ1e",
+    "role": "referee",
+    "created_at": "2026-03-26T07:54:29.532Z"
+  }
+]

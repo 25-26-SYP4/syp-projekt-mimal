@@ -4,26 +4,63 @@ const path = require("path");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const Database = require("better-sqlite3");
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "dev-change-me";
 
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Fußballturnier API",
+      version: "1.0.0",
+      description: "API für das Fußballturnier-Management-System",
+    },
+    servers: [
+      {
+        url: `http://localhost:${PORT}`,
+        description: "Development server",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  apis: [__filename],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
 const DATA_DIR = path.join(__dirname, "database");
-const DB_FILE = path.join(DATA_DIR, "app.db");
+const USERS_FILE = path.join(DATA_DIR, "users.json");
+const MATCHES_FILE = path.join(DATA_DIR, "matches.json");
+const STATE_FILE = path.join(DATA_DIR, "state.json");
 
 app.use(cors());
 app.use(express.json({ limit: "8mb" }));
+
+// Swagger UI
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-const db = new Database(DB_FILE);
-db.pragma("journal_mode = WAL");
-
-initSchema();
+initFiles();
 seedDefaults();
 
 const editableKeys = new Set([
@@ -48,85 +85,51 @@ const rolePermissions = {
   media: ["admin", "trainer"]
 };
 
-function initSchema() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      role TEXT NOT NULL,
-      created_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS matches (
-      id TEXT PRIMARY KEY,
-      datum TEXT NOT NULL,
-      uhrzeit TEXT NOT NULL,
-      heimTeam TEXT NOT NULL,
-      gastTeam TEXT NOT NULL,
-      platz TEXT NOT NULL,
-      schiri TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS app_state (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      bracket_json TEXT NOT NULL,
-      groups_json TEXT NOT NULL,
-      players_json TEXT NOT NULL,
-      notifications_json TEXT NOT NULL,
-      archives_json TEXT NOT NULL,
-      awards_json TEXT NOT NULL,
-      media_json TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-  `);
-
-  const exists = db.prepare("SELECT id FROM app_state WHERE id = 1").get();
-  if (!exists) {
-    const now = new Date().toISOString();
-    db.prepare(
-      `INSERT INTO app_state (
-        id, bracket_json, groups_json, players_json, notifications_json, archives_json, awards_json, media_json, updated_at
-      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      JSON.stringify(null),
-      JSON.stringify([]),
-      JSON.stringify({}),
-      JSON.stringify([]),
-      JSON.stringify([]),
-      JSON.stringify({ mvp: "", topScorer: "", fairPlayTeam: "" }),
-      JSON.stringify([]),
-      now
-    );
+function initFiles() {
+  if (!fs.existsSync(USERS_FILE)) {
+    fs.writeFileSync(USERS_FILE, JSON.stringify([]));
+  }
+  if (!fs.existsSync(MATCHES_FILE)) {
+    fs.writeFileSync(MATCHES_FILE, JSON.stringify([]));
+  }
+  if (!fs.existsSync(STATE_FILE)) {
+    fs.writeFileSync(STATE_FILE, JSON.stringify({
+      bracket: null,
+      groups: [],
+      players: {},
+      notifications: [],
+      archives: [],
+      awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
+      media: []
+    }));
   }
 }
 
 function seedDefaults() {
-  const count = db.prepare("SELECT COUNT(*) AS count FROM users").get().count;
-  if (count > 0) {
-    return;
-  }
+  const users = readJson(USERS_FILE);
+  if (users.length > 0) return;
 
   const now = new Date().toISOString();
-  const insert = db.prepare(
-    "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)"
-  );
-
   const defaults = [
-    ["admin", "admin123", "admin"],
-    ["gast", "gast123", "viewer"],
-    ["trainer", "trainer123", "trainer"],
-    ["schiri", "schiri123", "referee"]
+    { id: 1, username: "admin", password_hash: bcrypt.hashSync("admin123", 10), role: "admin", created_at: now },
+    { id: 2, username: "gast", password_hash: bcrypt.hashSync("gast123", 10), role: "viewer", created_at: now },
+    { id: 3, username: "trainer", password_hash: bcrypt.hashSync("trainer123", 10), role: "trainer", created_at: now },
+    { id: 4, username: "schiri", password_hash: bcrypt.hashSync("schiri123", 10), role: "referee", created_at: now }
   ];
 
-  const tx = db.transaction((rows) => {
-    rows.forEach(([username, plainPassword, role]) => {
-      const passwordHash = bcrypt.hashSync(plainPassword, 10);
-      insert.run(username, passwordHash, role, now);
-    });
-  });
+  writeJson(USERS_FILE, defaults);
+}
 
-  tx(defaults);
+function readJson(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    return [];
+  }
+}
+
+function writeJson(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
 function authOptional(req, _res, next) {
@@ -139,10 +142,9 @@ function authOptional(req, _res, next) {
   const token = header.slice("Bearer ".length).trim();
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    const user = db
-      .prepare("SELECT id, username, role FROM users WHERE id = ?")
-      .get(payload.sub);
-    req.user = user || null;
+    const users = readJson(USERS_FILE);
+    const user = users.find(u => u.id === payload.sub);
+    req.user = user ? { id: user.id, username: user.username, role: user.role } : null;
   } catch (_error) {
     req.user = null;
   }
@@ -166,15 +168,12 @@ function requireRole(roles) {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ message: "Keine Berechtigung." });
     }
-
     return next();
   };
 }
 
 function safeUsers() {
-  return db
-    .prepare("SELECT username, role FROM users ORDER BY username ASC")
-    .all();
+  return readJson(USERS_FILE).map(user => ({ username: user.username, role: user.role })).sort((a, b) => a.username.localeCompare(b.username));
 }
 
 function parseJson(value, fallback) {
@@ -186,91 +185,117 @@ function parseJson(value, fallback) {
 }
 
 function getWholeState() {
-  const matches = db
-    .prepare("SELECT id, datum, uhrzeit, heimTeam, gastTeam, platz, schiri FROM matches ORDER BY datum, uhrzeit")
-    .all();
-
-  const row = db
-    .prepare(
-      "SELECT bracket_json, groups_json, players_json, notifications_json, archives_json, awards_json, media_json FROM app_state WHERE id = 1"
-    )
-    .get();
+  const matches = readJson(MATCHES_FILE);
+  const state = readJson(STATE_FILE);
 
   return {
     matches,
-    bracket: parseJson(row.bracket_json, null),
-    groups: parseJson(row.groups_json, []),
-    players: parseJson(row.players_json, {}),
-    notifications: parseJson(row.notifications_json, []),
-    archives: parseJson(row.archives_json, []),
-    awards: parseJson(row.awards_json, { mvp: "", topScorer: "", fairPlayTeam: "" }),
-    media: parseJson(row.media_json, [])
+    bracket: state.bracket,
+    groups: state.groups,
+    players: state.players,
+    notifications: state.notifications,
+    archives: state.archives,
+    awards: state.awards,
+    media: state.media
   };
 }
 
 function updateStateKey(key, value) {
   if (key === "matches") {
-    const items = Array.isArray(value) ? value : [];
-
-    const clear = db.prepare("DELETE FROM matches");
-    const insert = db.prepare(
-      "INSERT INTO matches (id, datum, uhrzeit, heimTeam, gastTeam, platz, schiri) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    );
-
-    const tx = db.transaction(() => {
-      clear.run();
-      items.forEach((item) => {
-        if (!item || typeof item !== "object") {
-          return;
-        }
-
-        const id = String(item.id || "").trim();
-        if (!id) {
-          return;
-        }
-
-        insert.run(
-          id,
-          String(item.datum || ""),
-          String(item.uhrzeit || ""),
-          String(item.heimTeam || ""),
-          String(item.gastTeam || ""),
-          String(item.platz || ""),
-          String(item.schiri || "")
-        );
-      });
-    });
-
-    tx();
+    writeJson(MATCHES_FILE, value);
     return;
   }
 
-  const columnMap = {
-    bracket: "bracket_json",
-    groups: "groups_json",
-    players: "players_json",
-    notifications: "notifications_json",
-    archives: "archives_json",
-    awards: "awards_json",
-    media: "media_json"
-  };
-
-  const column = columnMap[key];
-  if (!column) {
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const sql = `UPDATE app_state SET ${column} = ?, updated_at = ? WHERE id = 1`;
-  db.prepare(sql).run(JSON.stringify(value), now);
+  const state = readJson(STATE_FILE);
+  state[key] = value;
+  writeJson(STATE_FILE, state);
 }
 
 app.use(authOptional);
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Health check endpoint
+ *     description: Returns the health status of the API
+ *     responses:
+ *       200:
+ *         description: API is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "ok"
+ *                 time:
+ *                   type: string
+ *                   format: date-time
+ */
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
+/**
+ * @swagger
+ * /api/test:
+ *   get:
+ *     summary: Test endpoint for swagger visibility
+ *     description: A simple endpoint to verify that the API and swagger are working.
+ *     responses:
+ *       200:
+ *         description: Test successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Test erfolgreich"
+ */
+app.get("/api/test", (_req, res) => {
+  res.json({ message: "Test erfolgreich" });
+});
+
+/**
+ * @swagger
+ * /api/bootstrap:
+ *   get:
+ *     summary: Bootstrap data
+ *     description: Returns initial data including current user, users list, and application state
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Bootstrap data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 currentUser:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     username:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                 state:
+ *                   type: object
+ */
 app.get("/api/bootstrap", (req, res) => {
   res.json({
     currentUser: req.user ? { username: req.user.username, role: req.user.role } : null,
@@ -279,15 +304,56 @@ app.get("/api/bootstrap", (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: User login
+ *     description: Authenticates a user and returns a JWT token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     username:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *       400:
+ *         description: Missing credentials
+ *       401:
+ *         description: Login failed
+ */
 app.post("/api/auth/login", (req, res) => {
   const { username, password } = req.body || {};
   if (!username || !password) {
     return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
-  const user = db
-    .prepare("SELECT id, username, role, password_hash FROM users WHERE username = ?")
-    .get(String(username).trim());
+  const users = readJson(USERS_FILE);
+  const user = users.find(u => u.username === String(username).trim());
 
   if (!user) {
     return res.status(401).json({ message: "Login fehlgeschlagen." });
@@ -311,10 +377,53 @@ app.post("/api/auth/login", (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: User logout
+ *     description: Logs out the current user
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *       401:
+ *         description: Not authenticated
+ */
 app.post("/api/auth/logout", requireAuth, (_req, res) => {
   return res.json({ message: "Logout erfolgreich." });
 });
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: User registration
+ *     description: Registers a new user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [viewer, trainer, referee]
+ *     responses:
+ *       201:
+ *         description: Registration successful
+ *       400:
+ *         description: Invalid input or username taken
+ */
 app.post("/api/auth/register", (req, res) => {
   const { username, password, role } = req.body || {};
 
@@ -330,9 +439,8 @@ app.post("/api/auth/register", (req, res) => {
   const finalRole = allowedRoles.includes(role) ? role : "viewer";
   const cleanUsername = String(username).trim();
 
-  const exists = db
-    .prepare("SELECT id FROM users WHERE lower(username) = lower(?)")
-    .get(cleanUsername);
+  const users = readJson(USERS_FILE);
+  const exists = users.find(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
 
   if (exists) {
     return res.status(400).json({ message: "Benutzername bereits vergeben." });
@@ -340,9 +448,18 @@ app.post("/api/auth/register", (req, res) => {
 
   const now = new Date().toISOString();
   const hash = bcrypt.hashSync(String(password), 10);
+  const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
 
-  db.prepare("INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)")
-    .run(cleanUsername, hash, finalRole, now);
+  const newUser = {
+    id: newId,
+    username: cleanUsername,
+    password_hash: hash,
+    role: finalRole,
+    created_at: now
+  };
+
+  users.push(newUser);
+  writeJson(USERS_FILE, users);
 
   return res.status(201).json({
     message: "Registrierung erfolgreich.",
@@ -353,6 +470,38 @@ app.post("/api/auth/register", (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /api/auth/admin:
+ *   post:
+ *     summary: Create admin user
+ *     description: Creates a new admin user (requires admin role)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Admin created
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Not authorized
+ */
 app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
   const { username, password } = req.body || {};
 
@@ -365,9 +514,8 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
   }
 
   const cleanUsername = String(username).trim();
-  const exists = db
-    .prepare("SELECT id FROM users WHERE lower(username) = lower(?)")
-    .get(cleanUsername);
+  const users = readJson(USERS_FILE);
+  const exists = users.find(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
 
   if (exists) {
     return res.status(400).json({ message: "Benutzername bereits vergeben." });
@@ -375,9 +523,18 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
 
   const now = new Date().toISOString();
   const hash = bcrypt.hashSync(String(password), 10);
+  const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
 
-  db.prepare("INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)")
-    .run(cleanUsername, hash, "admin", now);
+  const newUser = {
+    id: newId,
+    username: cleanUsername,
+    password_hash: hash,
+    role: "admin",
+    created_at: now
+  };
+
+  users.push(newUser);
+  writeJson(USERS_FILE, users);
 
   return res.status(201).json({
     message: "Admin erstellt.",
@@ -388,6 +545,42 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /api/state/{key}:
+ *   put:
+ *     summary: Update state key
+ *     description: Updates a specific state key with new value
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [matches, bracket, groups, players, notifications, archives, awards, media]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - value
+ *             properties:
+ *               value:
+ *                 type: any
+ *     responses:
+ *       200:
+ *         description: State updated
+ *       400:
+ *         description: Invalid key or missing value
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Not authorized
+ */
 app.put("/api/state/:key", requireAuth, (req, res) => {
   const { key } = req.params;
   if (!editableKeys.has(key)) {
@@ -407,8 +600,80 @@ app.put("/api/state/:key", requireAuth, (req, res) => {
   return res.json({ message: "Gespeichert.", key });
 });
 
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get users list
+ *     description: Returns a list of all users (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Users list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       username:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Not authorized
+ */
 app.get("/api/users", requireRole(["admin"]), (_req, res) => {
   return res.json({ users: safeUsers() });
+});
+
+/**
+ * @swagger
+ * /api/team-points:
+ *   get:
+ *     summary: Get team points
+ *     description: Returns the current points for all teams based on match results
+ *     responses:
+ *       200:
+ *         description: Team points
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties:
+ *                 type: integer
+ *                 description: Points for the team
+ */
+app.get("/api/team-points", (req, res) => {
+  const matches = readJson(MATCHES_FILE);
+  const points = {};
+
+  matches.forEach(match => {
+    if (match.result) {
+      const heim = match.heimTeam;
+      const gast = match.gastTeam;
+      if (!points[heim]) points[heim] = 0;
+      if (!points[gast]) points[gast] = 0;
+
+      if (match.result.heim > match.result.gast) {
+        points[heim] += 3;
+      } else if (match.result.heim < match.result.gast) {
+        points[gast] += 3;
+      } else {
+        points[heim] += 1;
+        points[gast] += 1;
+      }
+    }
+  });
+
+  res.json(points);
 });
 
 app.use((_req, res) => {
