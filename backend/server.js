@@ -13,6 +13,9 @@ let spiele = [];
 let users = [
   { username: "admin", password: "123", role: "admin" }
 ];
+let teamPoints = {}; // { teamName: points }
+let playerPoints = {}; // { playerName: { goals: 0, assists: 0 } }
+let awards = { mvp: "", topScorer: "", fairPlayTeam: "" };
 
 // Hilfsfunktionen
 const findUser = (username, password) => {
