@@ -45,6 +45,23 @@
       </article>
     </section>
 
+    <section class="card flow-coach" id="flowCoach">
+      <div class="top-row">
+        <h2>Flow Coach</h2>
+        <p id="flowProgressLabel" class="flow-progress-label">Fortschritt: 0%</p>
+      </div>
+      <p class="section-intro">Folge diesem Ablauf. Der naechste sinnvolle Schritt wird automatisch empfohlen.</p>
+      <div class="flow-progress-track" aria-hidden="true">
+        <div id="flowProgressBar" class="flow-progress-bar"></div>
+      </div>
+      <ol id="flowSteps" class="flow-steps"></ol>
+      <div class="actions">
+        <button type="button" id="flowPrimaryBtn">Naechster Schritt</button>
+        <button type="button" id="flowSecondaryBtn" class="secondary">Zum empfohlenen Bereich</button>
+      </div>
+      <p id="flowHint" class="message"></p>
+    </section>
+
     <nav class="app-nav hidden" id="appNav" aria-label="Hauptnavigation">
       <button type="button" class="nav-btn is-active" data-view="dashboard">Dashboard</button>
       <button type="button" class="nav-btn" data-view="live">Live</button>

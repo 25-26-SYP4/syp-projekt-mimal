@@ -22,6 +22,34 @@ const ROLE_LABELS = {
   viewer: "Zuschauer"
 };
 
+const FLOW_STEPS = [
+  {
+    id: "auth",
+    title: "Anmelden",
+    hint: "Melde dich an, damit Funktionen freigeschaltet werden."
+  },
+  {
+    id: "matches",
+    title: "Spiele planen",
+    hint: "Lege mindestens 2 Spiele an, damit Teams in allen Modulen verfuegbar sind."
+  },
+  {
+    id: "structure",
+    title: "Turnierstruktur bauen",
+    hint: "Erstelle Gruppen oder direkt den K.-o.-Baum."
+  },
+  {
+    id: "results",
+    title: "Ergebnisse eintragen",
+    hint: "Trage Resultate ein, damit Sieger automatisch weitergesetzt werden."
+  },
+  {
+    id: "finish",
+    title: "Abschluss & Share",
+    hint: "Archivieren, Awards setzen und Public-Link teilen."
+  }
+];
+
 const state = {
   users: [],
   matches: [],
@@ -65,6 +93,13 @@ const el = {
   bracketBoard: document.getElementById("bracketBoard"),
   bracketInfo: document.getElementById("bracketInfo"),
   championBadge: document.getElementById("championBadge"),
+  flowCoach: document.getElementById("flowCoach"),
+  flowProgressLabel: document.getElementById("flowProgressLabel"),
+  flowProgressBar: document.getElementById("flowProgressBar"),
+  flowSteps: document.getElementById("flowSteps"),
+  flowPrimaryBtn: document.getElementById("flowPrimaryBtn"),
+  flowSecondaryBtn: document.getElementById("flowSecondaryBtn"),
+  flowHint: document.getElementById("flowHint"),
   drawMode: document.getElementById("drawMode"),
   teamSeedInput: document.getElementById("teamSeedInput"),
   loadTeamsBtn: document.getElementById("loadTeamsBtn"),
@@ -225,6 +260,8 @@ function bindEvents() {
   el.mediaGallery.addEventListener("click", handleMediaGalleryClick);
   el.copyPublicLinkBtn.addEventListener("click", copyPublicLink);
   el.printPublicBtn.addEventListener("click", () => window.print());
+  el.flowPrimaryBtn.addEventListener("click", handleFlowPrimaryAction);
+  el.flowSecondaryBtn.addEventListener("click", handleFlowSecondaryAction);
 
   window.addEventListener("hashchange", handleHashRouting);
 
@@ -414,6 +451,7 @@ function handleSaveMatch(event) {
   checkUpcomingMatchNotifications();
   renderBracket();
   updateStats();
+  renderFlowCoach();
 }
 
 function handleLogout() {
@@ -475,6 +513,7 @@ function deleteMatch(id) {
   refreshPlayerTeams();
   renderBracket();
   updateStats();
+  renderFlowCoach();
 
   if (removed) {
     pushNotification(`Spiel geloescht: ${removed.heimTeam} vs ${removed.gastTeam}.`, "info");
@@ -606,6 +645,7 @@ function handleGenerateBracket() {
   const modeText = mode === "random" ? "Zufallsauslosung" : "Setzliste";
   setMessage(el.bracketInfo, `Neuer K.-o.-Baum erstellt (${modeText}, ${orderedTeams.length} Teams).`, "success");
   pushNotification(`K.-o.-Baum erstellt mit ${orderedTeams.length} Teams.`, "info");
+  renderFlowCoach();
 }
 
 function handleBracketBoardClick(event) {
@@ -667,6 +707,7 @@ function saveBracketResult(roundIndex, matchIndex) {
   renderBracket();
   setMessage(el.bracketInfo, "Ergebnis gespeichert. Sieger wurde weitergesetzt.", "success");
   pushNotification(`Ergebnis aktualisiert in Runde ${roundIndex + 1}, Match ${matchIndex + 1}.`, "success");
+  renderFlowCoach();
 }
 
 function renderBracket() {
@@ -987,6 +1028,7 @@ function handleGenerateGroups() {
   refreshPlayerTeams();
   setMessage(el.groupMessage, `${groups.length} Gruppen erstellt.`, "success");
   pushNotification("Gruppenphase wurde neu erstellt.", "info");
+  renderFlowCoach();
 }
 
 function renderGroups() {
@@ -1104,6 +1146,7 @@ function transferGroupsToKo() {
   setActiveView("bracket");
   setMessage(el.groupMessage, `${qualifiers.length} Teams in K.-o.-Setzliste uebernommen.`, "success");
   pushNotification("Top-Teams aus Gruppen in K.-o.-Setzliste uebernommen.", "info");
+  renderFlowCoach();
 }
 
 function handleAddPlayer() {
@@ -1335,6 +1378,7 @@ function archiveCurrentTournament() {
   renderArchives();
   setMessage(el.archiveMessage, "Turnier wurde archiviert.", "success");
   pushNotification(`Turnier archiviert. Champion: ${snapshot.champion || "offen"}.`, "success");
+  renderFlowCoach();
 }
 
 function renderArchives() {
@@ -1653,6 +1697,7 @@ function refreshUI() {
     toggleElement(el.matchesSection, false);
     toggleElement(el.bracketSection, false);
     toggleElement(el.publicSection, true);
+    toggleElement(el.flowCoach, false);
     el.logoutBtn.classList.add("hidden");
     el.sessionUser.textContent = "Oeffentlicher Modus";
     el.sessionBox.querySelector(".session-label").textContent = "Public";
@@ -1663,6 +1708,7 @@ function refreshUI() {
     return;
   }
 
+  toggleElement(el.flowCoach, true);
   toggleElement(el.authSection, !loggedIn);
   toggleElement(el.appNav, loggedIn);
   el.logoutBtn.classList.toggle("hidden", !loggedIn);
@@ -1696,6 +1742,7 @@ function refreshUI() {
   renderPublicShare();
   updateStats();
   checkUpcomingMatchNotifications();
+  renderFlowCoach();
 }
 
 function setActiveView(view) {
@@ -1730,6 +1777,213 @@ function setActiveView(view) {
   if (view === "public") {
     renderPublicShare();
   }
+  renderFlowCoach();
+}
+
+function getFlowStatus() {
+  const isLoggedIn = Boolean(state.currentUser);
+  const hasMatches = state.matches.length >= 2;
+  const hasStructure = Boolean(state.groups.length || state.bracket?.rounds?.length);
+  const hasResult = hasBracketResult();
+  const isFinished = Boolean(getChampionName() || state.archives.length);
+
+  const doneMap = {
+    auth: isLoggedIn,
+    matches: isLoggedIn && hasMatches,
+    structure: isLoggedIn && hasMatches && hasStructure,
+    results: isLoggedIn && hasMatches && hasStructure && hasResult,
+    finish: isLoggedIn && hasMatches && hasStructure && hasResult && isFinished
+  };
+
+  const firstOpenIndex = FLOW_STEPS.findIndex((step) => !doneMap[step.id]);
+  return {
+    doneMap,
+    firstOpenIndex: firstOpenIndex === -1 ? FLOW_STEPS.length - 1 : firstOpenIndex
+  };
+}
+
+function renderFlowCoach() {
+  if (!el.flowCoach) {
+    return;
+  }
+
+  const { doneMap, firstOpenIndex } = getFlowStatus();
+  const doneCount = FLOW_STEPS.filter((step) => doneMap[step.id]).length;
+  const percent = Math.round((doneCount / FLOW_STEPS.length) * 100);
+
+  el.flowProgressBar.style.width = `${percent}%`;
+  el.flowProgressLabel.textContent = `Fortschritt: ${percent}%`;
+  el.flowSteps.innerHTML = "";
+
+  FLOW_STEPS.forEach((step, index) => {
+    const item = document.createElement("li");
+    item.className = "flow-step";
+
+    if (doneMap[step.id]) {
+      item.classList.add("is-done");
+    } else if (index === firstOpenIndex) {
+      item.classList.add("is-active");
+    } else {
+      item.classList.add("is-locked");
+    }
+
+    item.innerHTML = `
+      <span class="flow-step-index">${index + 1}</span>
+      <div class="flow-step-body">
+        <p class="flow-step-title">${step.title}</p>
+        <p class="flow-step-hint">${step.hint}</p>
+      </div>
+    `;
+    el.flowSteps.appendChild(item);
+  });
+
+  const action = getSuggestedFlowAction();
+  el.flowPrimaryBtn.textContent = action.primaryLabel;
+  el.flowPrimaryBtn.dataset.action = action.id;
+  el.flowSecondaryBtn.dataset.view = action.view;
+  el.flowHint.textContent = action.hint;
+  el.flowHint.className = "message success";
+}
+
+function getSuggestedFlowAction() {
+  const isLoggedIn = Boolean(state.currentUser);
+
+  if (!isLoggedIn) {
+    return {
+      id: "go-auth",
+      primaryLabel: "Zur Anmeldung springen",
+      view: "dashboard",
+      hint: "Starte mit Login oder Registrierung."
+    };
+  }
+
+  if (state.matches.length < 2) {
+    return {
+      id: "go-create-match",
+      primaryLabel: "Naechstes Spiel anlegen",
+      view: "dashboard",
+      hint: "Lege zuerst mindestens zwei Spiele an."
+    };
+  }
+
+  if (!state.groups.length && !state.bracket?.rounds?.length) {
+    return {
+      id: "go-organization",
+      primaryLabel: "Gruppen oder K.-o. starten",
+      view: "organization",
+      hint: "Jetzt die Turnierstruktur erstellen."
+    };
+  }
+
+  if (!state.bracket?.rounds?.length) {
+    return {
+      id: "go-bracket",
+      primaryLabel: "K.-o.-Baum generieren",
+      view: "bracket",
+      hint: "Uebernimm Teams und starte den Turnierbaum."
+    };
+  }
+
+  if (!hasBracketResult()) {
+    return {
+      id: "go-enter-results",
+      primaryLabel: "Erstes Ergebnis eintragen",
+      view: "bracket",
+      hint: "Trage ein Match-Ergebnis ein, damit der Flow weiterlaeuft."
+    };
+  }
+
+  if (!getChampionName()) {
+    return {
+      id: "go-finish-bracket",
+      primaryLabel: "Turnier bis Finale ausspielen",
+      view: "bracket",
+      hint: "Der Champion wird automatisch gesetzt, sobald alle Runden fertig sind."
+    };
+  }
+
+  if (isAdmin() && !state.archives.length) {
+    return {
+      id: "go-archive",
+      primaryLabel: "Turnier archivieren",
+      view: "organization",
+      hint: "Als Abschluss den Stand archivieren und Awards pflegen."
+    };
+  }
+
+  return {
+    id: "go-public",
+    primaryLabel: "Public-Ansicht oeffnen",
+    view: "public",
+    hint: "Flow komplett. Teile jetzt den Public-Link."
+  };
+}
+
+function handleFlowPrimaryAction() {
+  const action = getSuggestedFlowAction();
+  if (action.id === "go-auth") {
+    focusSection(el.authSection);
+    return;
+  }
+
+  setActiveView(action.view);
+
+  if (action.id === "go-create-match") {
+    focusSection(el.adminTools);
+    el.fields.heimTeam?.focus();
+    return;
+  }
+
+  if (action.id === "go-organization") {
+    focusSection(el.organizationSection);
+    return;
+  }
+
+  if (action.id === "go-bracket" || action.id === "go-enter-results" || action.id === "go-finish-bracket") {
+    focusSection(el.bracketSection);
+    return;
+  }
+
+  if (action.id === "go-archive") {
+    focusSection(el.organizationSection);
+    el.archiveTournamentBtn?.focus();
+    return;
+  }
+
+  if (action.id === "go-public") {
+    focusSection(el.publicSection);
+  }
+}
+
+function handleFlowSecondaryAction() {
+  const action = getSuggestedFlowAction();
+  if (action.id === "go-auth") {
+    setActiveView("dashboard");
+    focusSection(el.authSection);
+    return;
+  }
+
+  setActiveView(action.view);
+}
+
+function hasBracketResult() {
+  if (!state.bracket?.rounds?.length) {
+    return false;
+  }
+
+  return state.bracket.rounds.some((round) =>
+    round.some((match) => isValidScore(match.homeScore) && isValidScore(match.awayScore))
+  );
+}
+
+function focusSection(node) {
+  if (!node || node.classList.contains("hidden")) {
+    return;
+  }
+
+  node.scrollIntoView({ behavior: "smooth", block: "start" });
+  node.classList.add("pulse-focus");
+  window.setTimeout(() => node.classList.remove("pulse-focus"), 900);
 }
 
 function applyViewVisibility() {
