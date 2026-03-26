@@ -7,6 +7,8 @@ const STORAGE_KEYS = {
   PLAYERS: "ft_players",
   NOTIFICATIONS: "ft_notifications",
   ARCHIVES: "ft_archives",
+  AWARDS: "ft_awards",
+  MEDIA: "ft_media",
   THEME: "ft_theme"
 };
 
@@ -25,6 +27,12 @@ const state = {
   players: {},
   notifications: [],
   archives: [],
+  awards: {
+    mvp: "",
+    topScorer: "",
+    fairPlayTeam: ""
+  },
+  media: [],
   currentUser: null,
   editingMatchId: null,
   searchTerm: "",
@@ -37,11 +45,20 @@ const el = {
   appNav: document.getElementById("appNav"),
   navButtons: document.querySelectorAll(".nav-btn"),
   dashboardSection: document.getElementById("dashboardSection"),
+  liveSection: document.getElementById("liveSection"),
   adminTools: document.getElementById("adminTools"),
   adminCreator: document.getElementById("adminCreator"),
   organizationSection: document.getElementById("organizationSection"),
   matchesSection: document.getElementById("matchesSection"),
   bracketSection: document.getElementById("bracketSection"),
+  publicSection: document.getElementById("publicSection"),
+  liveBoard: document.getElementById("liveBoard"),
+  liveMessage: document.getElementById("liveMessage"),
+  refreshLiveBtn: document.getElementById("refreshLiveBtn"),
+  publicBoard: document.getElementById("publicBoard"),
+  publicMessage: document.getElementById("publicMessage"),
+  copyPublicLinkBtn: document.getElementById("copyPublicLinkBtn"),
+  printPublicBtn: document.getElementById("printPublicBtn"),
   bracketBoard: document.getElementById("bracketBoard"),
   bracketInfo: document.getElementById("bracketInfo"),
   championBadge: document.getElementById("championBadge"),
@@ -86,6 +103,17 @@ const el = {
   archiveTournamentBtn: document.getElementById("archiveTournamentBtn"),
   archiveMessage: document.getElementById("archiveMessage"),
   archiveList: document.getElementById("archiveList"),
+  awardMvpInput: document.getElementById("awardMvpInput"),
+  awardTopScorerInput: document.getElementById("awardTopScorerInput"),
+  awardFairPlayInput: document.getElementById("awardFairPlayInput"),
+  saveAwardsBtn: document.getElementById("saveAwardsBtn"),
+  awardsMessage: document.getElementById("awardsMessage"),
+  awardsList: document.getElementById("awardsList"),
+  mediaTitleInput: document.getElementById("mediaTitleInput"),
+  mediaFileInput: document.getElementById("mediaFileInput"),
+  addMediaBtn: document.getElementById("addMediaBtn"),
+  mediaMessage: document.getElementById("mediaMessage"),
+  mediaGallery: document.getElementById("mediaGallery"),
   fields: {
     loginUsername: document.getElementById("loginUsername"),
     loginPassword: document.getElementById("loginPassword"),
@@ -110,6 +138,7 @@ function init() {
   restoreSession();
   applyTheme(state.theme);
   bindEvents();
+  handleHashRouting();
   refreshUI();
 }
 
@@ -131,6 +160,12 @@ function initializeStorage() {
   ensureStorageValue(STORAGE_KEYS.PLAYERS, {});
   ensureStorageValue(STORAGE_KEYS.NOTIFICATIONS, []);
   ensureStorageValue(STORAGE_KEYS.ARCHIVES, []);
+  ensureStorageValue(STORAGE_KEYS.AWARDS, {
+    mvp: "",
+    topScorer: "",
+    fairPlayTeam: ""
+  });
+  ensureStorageValue(STORAGE_KEYS.MEDIA, []);
   ensureStorageValue(STORAGE_KEYS.THEME, "light");
 
   state.users = parseJSON(localStorage.getItem(STORAGE_KEYS.USERS), []);
@@ -140,6 +175,12 @@ function initializeStorage() {
   state.players = parseJSON(localStorage.getItem(STORAGE_KEYS.PLAYERS), {});
   state.notifications = parseJSON(localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS), []);
   state.archives = parseJSON(localStorage.getItem(STORAGE_KEYS.ARCHIVES), []);
+  state.awards = parseJSON(localStorage.getItem(STORAGE_KEYS.AWARDS), {
+    mvp: "",
+    topScorer: "",
+    fairPlayTeam: ""
+  });
+  state.media = parseJSON(localStorage.getItem(STORAGE_KEYS.MEDIA), []);
   state.theme = parseJSON(localStorage.getItem(STORAGE_KEYS.THEME), "light") || "light";
 
   if (state.bracket) {
@@ -180,6 +221,7 @@ function bindEvents() {
   el.loadTeamsBtn.addEventListener("click", loadTeamsFromMatches);
   el.generateBracketBtn.addEventListener("click", handleGenerateBracket);
   el.bracketBoard.addEventListener("click", handleBracketBoardClick);
+  el.refreshLiveBtn.addEventListener("click", renderLiveCenter);
 
   el.loadGroupTeamsBtn.addEventListener("click", loadGroupTeamsFromMatches);
   el.generateGroupsBtn.addEventListener("click", handleGenerateGroups);
@@ -192,6 +234,13 @@ function bindEvents() {
 
   el.markNotificationsReadBtn.addEventListener("click", markAllNotificationsRead);
   el.archiveTournamentBtn.addEventListener("click", archiveCurrentTournament);
+  el.saveAwardsBtn.addEventListener("click", saveAwards);
+  el.addMediaBtn.addEventListener("click", addMediaItem);
+  el.mediaGallery.addEventListener("click", handleMediaGalleryClick);
+  el.copyPublicLinkBtn.addEventListener("click", copyPublicLink);
+  el.printPublicBtn.addEventListener("click", () => window.print());
+
+  window.addEventListener("hashchange", handleHashRouting);
 
   el.navButtons.forEach((button) => {
     button.addEventListener("click", () => setActiveView(button.dataset.view));
@@ -1275,6 +1324,275 @@ function renderArchives() {
   });
 }
 
+function handleHashRouting() {
+  if (window.location.hash === "#public") {
+    state.activeView = "public";
+  } else if (state.activeView === "public") {
+    state.activeView = "dashboard";
+  }
+
+  if (state.currentUser) {
+    applyViewVisibility();
+    updateNavState();
+    if (state.activeView === "public") {
+      renderPublicShare();
+    }
+  } else if (isPublicHashMode()) {
+    refreshUI();
+  }
+}
+
+function isPublicHashMode() {
+  return window.location.hash === "#public";
+}
+
+function renderLiveCenter() {
+  el.liveBoard.innerHTML = "";
+
+  if (!state.matches.length) {
+    setMessage(el.liveMessage, "Noch keine Spiele geplant.", "error");
+    return;
+  }
+
+  const now = new Date();
+  const buckets = {
+    live: [],
+    upcoming: [],
+    done: []
+  };
+
+  state.matches.forEach((match) => {
+    const kickoff = new Date(`${match.datum}T${match.uhrzeit}`);
+    if (Number.isNaN(kickoff.getTime())) {
+      return;
+    }
+    const diffMinutes = Math.round((kickoff.getTime() - now.getTime()) / 60000);
+    if (diffMinutes <= 0 && diffMinutes >= -120) {
+      buckets.live.push(match);
+    } else if (diffMinutes > 0) {
+      buckets.upcoming.push(match);
+    } else {
+      buckets.done.push(match);
+    }
+  });
+
+  renderLiveBucket("Live jetzt", buckets.live);
+  renderLiveBucket("Als naechstes", buckets.upcoming.slice(0, 6));
+  renderLiveBucket("Bereits gespielt", buckets.done.slice(0, 6));
+
+  setMessage(
+    el.liveMessage,
+    `Live: ${buckets.live.length} | Demnaechst: ${buckets.upcoming.length} | Gespielt: ${buckets.done.length}`,
+    "success"
+  );
+}
+
+function renderLiveBucket(title, matches) {
+  const block = document.createElement("article");
+  block.className = "live-bucket";
+
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  block.appendChild(heading);
+
+  if (!matches.length) {
+    const p = document.createElement("p");
+    p.className = "message";
+    p.textContent = "Keine Spiele in diesem Bereich.";
+    block.appendChild(p);
+    el.liveBoard.appendChild(block);
+    return;
+  }
+
+  const list = document.createElement("ul");
+  list.className = "simple-list";
+  matches
+    .sort((a, b) => `${a.datum} ${a.uhrzeit}`.localeCompare(`${b.datum} ${b.uhrzeit}`))
+    .forEach((match) => {
+      const li = document.createElement("li");
+      li.className = "list-item-row";
+      li.innerHTML = `<span><strong>${match.heimTeam}</strong> vs <strong>${match.gastTeam}</strong> | ${match.datum} ${match.uhrzeit} | ${match.platz}</span>`;
+      list.appendChild(li);
+    });
+
+  block.appendChild(list);
+  el.liveBoard.appendChild(block);
+}
+
+function saveAwards() {
+  if (!isAdmin()) {
+    setMessage(el.awardsMessage, "Nur Admins duerfen Awards setzen.", "error");
+    return;
+  }
+
+  state.awards = {
+    mvp: el.awardMvpInput.value.trim(),
+    topScorer: el.awardTopScorerInput.value.trim(),
+    fairPlayTeam: el.awardFairPlayInput.value.trim()
+  };
+
+  persistAwards();
+  renderAwards();
+  setMessage(el.awardsMessage, "Awards gespeichert.", "success");
+}
+
+function renderAwards() {
+  el.awardsList.innerHTML = "";
+  el.awardMvpInput.value = state.awards.mvp || "";
+  el.awardTopScorerInput.value = state.awards.topScorer || "";
+  el.awardFairPlayInput.value = state.awards.fairPlayTeam || "";
+
+  const rows = [
+    `Champion: ${getChampionName() || "offen"}`,
+    `MVP: ${state.awards.mvp || "offen"}`,
+    `Top-Scorer: ${state.awards.topScorer || "offen"}`,
+    `Fair-Play-Team: ${state.awards.fairPlayTeam || "offen"}`
+  ];
+
+  rows.forEach((rowText) => {
+    const li = document.createElement("li");
+    li.className = "list-item-row";
+    li.textContent = rowText;
+    el.awardsList.appendChild(li);
+  });
+}
+
+async function addMediaItem() {
+  if (!canManagePlayers()) {
+    setMessage(el.mediaMessage, "Nur Admins oder Trainer duerfen Medien hinzufuegen.", "error");
+    return;
+  }
+
+  const title = el.mediaTitleInput.value.trim() || "Ohne Titel";
+  const file = el.mediaFileInput.files?.[0];
+  if (!file) {
+    setMessage(el.mediaMessage, "Bitte zuerst ein Bild waehlen.", "error");
+    return;
+  }
+
+  try {
+    const dataUrl = await fileToDataUrl(file);
+    state.media.unshift({
+      id: crypto.randomUUID(),
+      title,
+      src: dataUrl,
+      createdAt: new Date().toISOString()
+    });
+    state.media = state.media.slice(0, 40);
+    persistMedia();
+    renderMediaGallery();
+
+    el.mediaTitleInput.value = "";
+    el.mediaFileInput.value = "";
+    setMessage(el.mediaMessage, "Bild zur Mediathek hinzugefuegt.", "success");
+  } catch (_error) {
+    setMessage(el.mediaMessage, "Bild konnte nicht geladen werden.", "error");
+  }
+}
+
+function handleMediaGalleryClick(event) {
+  const button = event.target.closest(".delete-media-btn");
+  if (!button) {
+    return;
+  }
+
+  if (!canManagePlayers()) {
+    return;
+  }
+
+  const mediaId = button.dataset.mediaId;
+  state.media = state.media.filter((item) => item.id !== mediaId);
+  persistMedia();
+  renderMediaGallery();
+}
+
+function renderMediaGallery() {
+  el.mediaGallery.innerHTML = "";
+  if (!state.media.length) {
+    const p = document.createElement("p");
+    p.className = "message";
+    p.textContent = "Noch keine Bilder hochgeladen.";
+    el.mediaGallery.appendChild(p);
+    return;
+  }
+
+  state.media.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "media-card";
+
+    const img = document.createElement("img");
+    img.src = item.src;
+    img.alt = item.title;
+
+    const caption = document.createElement("p");
+    caption.textContent = `${item.title} (${formatDate(item.createdAt)})`;
+
+    card.appendChild(img);
+    card.appendChild(caption);
+
+    if (canManagePlayers()) {
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "danger mini delete-media-btn";
+      delBtn.dataset.mediaId = item.id;
+      delBtn.textContent = "Entfernen";
+      card.appendChild(delBtn);
+    }
+
+    el.mediaGallery.appendChild(card);
+  });
+}
+
+function renderPublicShare() {
+  el.publicBoard.innerHTML = "";
+
+  const summary = document.createElement("div");
+  summary.className = "public-summary";
+  summary.innerHTML = `
+    <p><strong>Champion:</strong> ${getChampionName() || "offen"}</p>
+    <p><strong>Spiele:</strong> ${state.matches.length}</p>
+    <p><strong>Teams:</strong> ${getUniqueTeams().length}</p>
+    <p><strong>MVP:</strong> ${state.awards.mvp || "offen"}</p>
+  `;
+  el.publicBoard.appendChild(summary);
+
+  if (state.matches.length) {
+    const list = document.createElement("ul");
+    list.className = "simple-list";
+    [...state.matches]
+      .sort((a, b) => `${a.datum} ${a.uhrzeit}`.localeCompare(`${b.datum} ${b.uhrzeit}`))
+      .slice(0, 10)
+      .forEach((match) => {
+        const li = document.createElement("li");
+        li.className = "list-item-row";
+        li.textContent = `${match.datum} ${match.uhrzeit} | ${match.heimTeam} vs ${match.gastTeam} | ${match.platz}`;
+        list.appendChild(li);
+      });
+    el.publicBoard.appendChild(list);
+  }
+
+  setMessage(el.publicMessage, "Read-only Ansicht fuer Fans und Eltern.", "success");
+}
+
+async function copyPublicLink() {
+  const url = `${window.location.origin}${window.location.pathname}#public`;
+  try {
+    await navigator.clipboard.writeText(url);
+    setMessage(el.publicMessage, "Public-Link kopiert.", "success");
+  } catch (_error) {
+    setMessage(el.publicMessage, `Link: ${url}`, "success");
+  }
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("read-error"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function toggleTheme() {
   state.theme = state.theme === "light" ? "dark" : "light";
   applyTheme(state.theme);
@@ -1288,6 +1606,28 @@ function applyTheme(theme) {
 
 function refreshUI() {
   const loggedIn = Boolean(state.currentUser);
+  const publicMode = isPublicHashMode();
+
+  if (!loggedIn && publicMode) {
+    toggleElement(el.authSection, true);
+    toggleElement(el.appNav, false);
+    toggleElement(el.liveSection, false);
+    toggleElement(el.dashboardSection, false);
+    toggleElement(el.adminTools, false);
+    toggleElement(el.adminCreator, false);
+    toggleElement(el.organizationSection, false);
+    toggleElement(el.matchesSection, false);
+    toggleElement(el.bracketSection, false);
+    toggleElement(el.publicSection, true);
+    el.logoutBtn.classList.add("hidden");
+    el.sessionUser.textContent = "Oeffentlicher Modus";
+    el.sessionBox.querySelector(".session-label").textContent = "Public";
+    el.roleLabel.textContent = "Gast";
+    updateChampionBadge(getChampionName());
+    renderPublicShare();
+    renderMediaGallery();
+    return;
+  }
 
   toggleElement(el.authSection, !loggedIn);
   toggleElement(el.appNav, loggedIn);
@@ -1311,31 +1651,49 @@ function refreshUI() {
   refreshGroupInputFromMatches(true);
   refreshPlayerTeams();
   renderMatches();
+  renderLiveCenter();
   renderGroups();
   renderBracket();
   renderNotifications();
   renderArchives();
+  renderAwards();
+  renderMediaGallery();
+  renderPublicShare();
   updateStats();
   checkUpcomingMatchNotifications();
 }
 
 function setActiveView(view) {
-  if (!["dashboard", "organization", "matches", "bracket"].includes(view)) {
+  if (!["dashboard", "live", "organization", "matches", "bracket", "public"].includes(view)) {
     return;
   }
 
   state.activeView = view;
+  if (view === "public") {
+    window.location.hash = "public";
+  } else if (isPublicHashMode()) {
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+
   applyViewVisibility();
   updateNavState();
 
   if (view === "bracket") {
     renderBracket();
   }
+  if (view === "live") {
+    renderLiveCenter();
+  }
   if (view === "organization") {
     renderGroups();
     renderPlayers();
     renderNotifications();
     renderArchives();
+    renderAwards();
+    renderMediaGallery();
+  }
+  if (view === "public") {
+    renderPublicShare();
   }
 }
 
@@ -1344,16 +1702,20 @@ function applyViewVisibility() {
   const canMatchEdit = canManageMatches();
 
   const onDashboard = loggedIn && state.activeView === "dashboard";
+  const onLive = loggedIn && state.activeView === "live";
   const onOrganization = loggedIn && state.activeView === "organization";
   const onMatches = loggedIn && state.activeView === "matches";
   const onBracket = loggedIn && state.activeView === "bracket";
+  const onPublic = loggedIn && state.activeView === "public";
 
   toggleElement(el.dashboardSection, onDashboard);
+  toggleElement(el.liveSection, onLive);
   toggleElement(el.adminTools, onDashboard && canMatchEdit);
   toggleElement(el.adminCreator, onDashboard && isAdmin());
   toggleElement(el.organizationSection, onOrganization);
   toggleElement(el.matchesSection, onMatches);
   toggleElement(el.bracketSection, onBracket);
+  toggleElement(el.publicSection, onPublic);
 }
 
 function updateNavState() {
@@ -1382,7 +1744,11 @@ function clearMessages() {
     el.bracketInfo,
     el.groupMessage,
     el.playerMessage,
-    el.archiveMessage
+    el.archiveMessage,
+    el.liveMessage,
+    el.publicMessage,
+    el.awardsMessage,
+    el.mediaMessage
   ].forEach((node) => {
     if (!node) {
       return;
@@ -1571,6 +1937,14 @@ function persistNotifications() {
 
 function persistArchives() {
   localStorage.setItem(STORAGE_KEYS.ARCHIVES, JSON.stringify(state.archives));
+}
+
+function persistAwards() {
+  localStorage.setItem(STORAGE_KEYS.AWARDS, JSON.stringify(state.awards));
+}
+
+function persistMedia() {
+  localStorage.setItem(STORAGE_KEYS.MEDIA, JSON.stringify(state.media));
 }
 
 function toggleElement(node, visible) {

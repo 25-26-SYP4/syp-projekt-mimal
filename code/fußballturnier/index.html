@@ -26,10 +26,21 @@
 
     <nav class="app-nav hidden" id="appNav" aria-label="Hauptnavigation">
       <button type="button" class="nav-btn is-active" data-view="dashboard">Dashboard</button>
+      <button type="button" class="nav-btn" data-view="live">Live</button>
       <button type="button" class="nav-btn" data-view="organization">Organisation</button>
       <button type="button" class="nav-btn" data-view="matches">Spiele</button>
       <button type="button" class="nav-btn" data-view="bracket">Turnierbaum</button>
+      <button type="button" class="nav-btn" data-view="public">Public</button>
     </nav>
+
+    <section class="card hidden" id="liveSection" data-view="live">
+      <div class="top-row">
+        <h2>Live Match-Center</h2>
+        <button type="button" id="refreshLiveBtn" class="secondary">Aktualisieren</button>
+      </div>
+      <p id="liveMessage" class="message"></p>
+      <div id="liveBoard" class="live-board"></div>
+    </section>
 
     <section class="grid auth-grid" id="authSection">
       <article class="card">
@@ -188,6 +199,53 @@
         <p id="archiveMessage" class="message"></p>
         <ul id="archiveList" class="simple-list"></ul>
       </article>
+
+      <article class="panel-block">
+        <h3>Awards und MVP</h3>
+        <div class="form-grid compact">
+          <label for="awardMvpInput">MVP</label>
+          <input id="awardMvpInput" type="text" placeholder="Name" />
+
+          <label for="awardTopScorerInput">Top-Scorer</label>
+          <input id="awardTopScorerInput" type="text" placeholder="Name" />
+
+          <label for="awardFairPlayInput">Fair-Play-Team</label>
+          <input id="awardFairPlayInput" type="text" placeholder="Teamname" />
+        </div>
+        <div class="actions">
+          <button type="button" id="saveAwardsBtn">Awards speichern</button>
+        </div>
+        <p id="awardsMessage" class="message"></p>
+        <ul id="awardsList" class="simple-list"></ul>
+      </article>
+
+      <article class="panel-block">
+        <h3>Mediathek</h3>
+        <div class="form-grid compact">
+          <label for="mediaTitleInput">Titel</label>
+          <input id="mediaTitleInput" type="text" placeholder="z. B. Siegerfoto" />
+
+          <label for="mediaFileInput">Bild</label>
+          <input id="mediaFileInput" type="file" accept="image/*" />
+        </div>
+        <div class="actions">
+          <button type="button" id="addMediaBtn">Zur Mediathek</button>
+        </div>
+        <p id="mediaMessage" class="message"></p>
+        <div id="mediaGallery" class="media-gallery"></div>
+      </article>
+    </section>
+
+    <section class="card hidden" id="publicSection" data-view="public">
+      <div class="top-row">
+        <h2>Public Share</h2>
+        <div class="actions">
+          <button type="button" id="copyPublicLinkBtn" class="secondary">Link kopieren</button>
+          <button type="button" id="printPublicBtn">Drucken</button>
+        </div>
+      </div>
+      <p class="message" id="publicMessage"></p>
+      <div id="publicBoard" class="public-board"></div>
     </section>
 
     <section class="card hidden" id="matchesSection" data-view="matches">

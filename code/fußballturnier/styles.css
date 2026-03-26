@@ -428,6 +428,74 @@ button.mini {
   gap: 0.55rem;
 }
 
+.live-board {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.live-bucket {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.7rem;
+  background: var(--surface);
+}
+
+.live-bucket h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.media-gallery {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.media-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  padding: 0.55rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.media-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.media-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.public-board {
+  margin-top: 0.7rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.public-summary {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: var(--surface);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.public-summary p {
+  margin: 0;
+}
+
 .bracket-subtitle {
   margin: 0;
   color: var(--muted);
@@ -652,5 +720,39 @@ button.mini {
   .bracket-board {
     grid-auto-columns: minmax(180px, 1fr);
     gap: 0.8rem;
+  }
+}
+
+@media print {
+  .app-nav,
+  #authSection,
+  #organizationSection,
+  #matchesSection,
+  #bracketSection,
+  #liveSection,
+  #themeToggleBtn,
+  #logoutBtn,
+  #copyPublicLinkBtn {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .container {
+    width: 100%;
+    margin: 0;
+  }
+
+  .card,
+  .hero {
+    box-shadow: none;
+    border: 1px solid #cccccc;
+  }
+
+  #publicSection {
+    display: block !important;
   }
 }
