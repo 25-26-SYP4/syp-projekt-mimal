@@ -21,7 +21,157 @@ const ROLE_LABELS = {
   referee: "Schiri",
   viewer: "Zuschauer"
 };
-//
+
+
+const FLOW_STEPS = [
+  {
+    id: "auth",
+    title: "Anmelden",
+    hint: "Melde dich an, damit Funktionen freigeschaltet werden."
+  },
+  {
+    id: "matches",
+    title: "Spiele planen",
+    hint: "Lege mindestens 2 Spiele an, damit Teams in allen Modulen verfuegbar sind."
+  },
+  {
+    id: "structure",
+    title: "Turnierstruktur bauen",
+    hint: "Erstelle Gruppen oder direkt den K.-o.-Baum."
+  },
+  {
+    id: "results",
+    title: "Ergebnisse eintragen",
+    hint: "Trage Resultate ein, damit Sieger automatisch weitergesetzt werden."
+  },
+  {
+    id: "finish",
+    title: "Abschluss & Share",
+    hint: "Archivieren, Awards setzen und Public-Link teilen."
+  }
+];
+
+const state = {
+  users: [],
+  matches: [],
+  bracket: null,
+  groups: [],
+  players: {},
+  notifications: [],
+  archives: [],
+  awards: {
+    mvp: "",
+    topScorer: "",
+    fairPlayTeam: ""
+  },
+  media: [],
+  currentUser: null,
+  editingMatchId: null,
+  searchTerm: "",
+  activeView: "dashboard",
+  theme: "light"
+};
+
+const el = {
+  authSection: document.getElementById("authSection"),
+  appNav: document.getElementById("appNav"),
+  navButtons: document.querySelectorAll(".nav-btn"),
+  dashboardSection: document.getElementById("dashboardSection"),
+  liveSection: document.getElementById("liveSection"),
+  adminTools: document.getElementById("adminTools"),
+  adminCreator: document.getElementById("adminCreator"),
+  organizationSection: document.getElementById("organizationSection"),
+  matchesSection: document.getElementById("matchesSection"),
+  bracketSection: document.getElementById("bracketSection"),
+  publicSection: document.getElementById("publicSection"),
+  liveBoard: document.getElementById("liveBoard"),
+  liveMessage: document.getElementById("liveMessage"),
+  refreshLiveBtn: document.getElementById("refreshLiveBtn"),
+  publicBoard: document.getElementById("publicBoard"),
+  publicMessage: document.getElementById("publicMessage"),
+  copyPublicLinkBtn: document.getElementById("copyPublicLinkBtn"),
+  printPublicBtn: document.getElementById("printPublicBtn"),
+  bracketBoard: document.getElementById("bracketBoard"),
+  bracketInfo: document.getElementById("bracketInfo"),
+  championBadge: document.getElementById("championBadge"),
+  flowCoach: document.getElementById("flowCoach"),
+  flowProgressLabel: document.getElementById("flowProgressLabel"),
+  flowProgressBar: document.getElementById("flowProgressBar"),
+  flowSteps: document.getElementById("flowSteps"),
+  flowPrimaryBtn: document.getElementById("flowPrimaryBtn"),
+  flowSecondaryBtn: document.getElementById("flowSecondaryBtn"),
+  flowHint: document.getElementById("flowHint"),
+  drawMode: document.getElementById("drawMode"),
+  teamSeedInput: document.getElementById("teamSeedInput"),
+  loadTeamsBtn: document.getElementById("loadTeamsBtn"),
+  generateBracketBtn: document.getElementById("generateBracketBtn"),
+  sessionUser: document.getElementById("sessionUser"),
+  sessionBox: document.getElementById("sessionBox"),
+  logoutBtn: document.getElementById("logoutBtn"),
+  themeToggleBtn: document.getElementById("themeToggleBtn"),
+  roleLabel: document.getElementById("roleLabel"),
+  totalMatches: document.getElementById("totalMatches"),
+  upcomingMatches: document.getElementById("upcomingMatches"),
+  loginForm: document.getElementById("loginForm"),
+  registerForm: document.getElementById("registerForm"),
+  adminForm: document.getElementById("adminForm"),
+  matchForm: document.getElementById("matchForm"),
+  loginMessage: document.getElementById("loginMessage"),
+  registerMessage: document.getElementById("registerMessage"),
+  adminMsg: document.getElementById("adminMsg"),
+  matchMessage: document.getElementById("matchMessage"),
+  searchInput: document.getElementById("searchInput"),
+  matchesList: document.getElementById("spiele"),
+  saveMatchBtn: document.getElementById("saveMatchBtn"),
+  cancelEditBtn: document.getElementById("cancelEditBtn"),
+  exportBtn: document.getElementById("exportBtn"),
+  groupSizeInput: document.getElementById("groupSizeInput"),
+  groupTeamsInput: document.getElementById("groupTeamsInput"),
+  loadGroupTeamsBtn: document.getElementById("loadGroupTeamsBtn"),
+  generateGroupsBtn: document.getElementById("generateGroupsBtn"),
+  transferToKoBtn: document.getElementById("transferToKoBtn"),
+  groupMessage: document.getElementById("groupMessage"),
+  groupBoard: document.getElementById("groupBoard"),
+  playerTeamSelect: document.getElementById("playerTeamSelect"),
+  playerNameInput: document.getElementById("playerNameInput"),
+  addPlayerBtn: document.getElementById("addPlayerBtn"),
+  playerMessage: document.getElementById("playerMessage"),
+  playerList: document.getElementById("playerList"),
+  markNotificationsReadBtn: document.getElementById("markNotificationsReadBtn"),
+  notificationList: document.getElementById("notificationList"),
+  archiveTournamentBtn: document.getElementById("archiveTournamentBtn"),
+  archiveMessage: document.getElementById("archiveMessage"),
+  archiveList: document.getElementById("archiveList"),
+  awardMvpInput: document.getElementById("awardMvpInput"),
+  awardTopScorerInput: document.getElementById("awardTopScorerInput"),
+  awardFairPlayInput: document.getElementById("awardFairPlayInput"),
+  saveAwardsBtn: document.getElementById("saveAwardsBtn"),
+  awardsMessage: document.getElementById("awardsMessage"),
+  awardsList: document.getElementById("awardsList"),
+  mediaTitleInput: document.getElementById("mediaTitleInput"),
+  mediaFileInput: document.getElementById("mediaFileInput"),
+  addMediaBtn: document.getElementById("addMediaBtn"),
+  mediaMessage: document.getElementById("mediaMessage"),
+  mediaGallery: document.getElementById("mediaGallery"),
+  teamSuggestions: document.getElementById("teamSuggestions"),
+  fields: {
+    loginUsername: document.getElementById("loginUsername"),
+    loginPassword: document.getElementById("loginPassword"),
+    registerUsername: document.getElementById("registerUsername"),
+    registerPassword: document.getElementById("registerPassword"),
+    registerRole: document.getElementById("registerRole"),
+    adminName: document.getElementById("adminName"),
+    adminPass: document.getElementById("adminPass"),
+    spielDatum: document.getElementById("spielDatum"),
+    spielUhrzeit: document.getElementById("spielUhrzeit"),
+    heimTeam: document.getElementById("heimTeam"),
+    gastTeam: document.getElementById("gastTeam"),
+    spielPlatz: document.getElementById("spielPlatz"),
+    spielSchiri: document.getElementById("spielSchiri")
+  }
+};
+
+
 init();
 
 async function init() {
@@ -1949,6 +2099,11 @@ function setDefaultMatchDateTime() {
 
   el.fields.spielDatum.value = isoDate;
   el.fields.spielUhrzeit.value = `${hh}:${mm}`;
+}
+
+
+function iwos(value) {
+  return value;
 }
 
 function normalizeName(value) {
