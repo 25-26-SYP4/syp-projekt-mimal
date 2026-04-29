@@ -181,6 +181,7 @@ const el = {
   }
 };
 
+
 init();
 
 async function init() {
@@ -469,7 +470,7 @@ function handleSaveMatch(event) {
 function handleLogout() {
   state.currentUser = null;
   state.editingMatchId = null;
-  apiRequest("/auth/logout", { method: "POST" }).catch(() => {});
+  apiRequest("/auth/logout", { method: "POST" }).catch(() => { });
   authToken = "";
   localStorage.removeItem("ft_auth_token");
   clearMatchForm();
@@ -2381,6 +2382,11 @@ function setDefaultMatchDateTime() {
   el.fields.spielUhrzeit.value = `${hh}:${mm}`;
 }
 
+
+function iwos(value) {
+  return value;
+}
+
 function normalizeName(value) {
   return value
     .trim()
@@ -2648,7 +2654,7 @@ function apiSaveState(key, value) {
   apiRequest(`/state/${key}`, {
     method: "PUT",
     body: { value }
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 async function apiRequest(pathname, options = {}) {
