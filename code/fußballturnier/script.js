@@ -22,6 +22,13 @@ const ROLE_LABELS = {
   viewer: "Zuschauer"
 };
 
+const ROLE_VIEW_ACCESS = {
+  admin: ["dashboard", "live", "organization", "matches", "bracket", "public"],
+  trainer: ["dashboard", "live", "organization", "matches", "bracket", "public"],
+  referee: ["dashboard", "live", "matches", "bracket", "public"],
+  viewer: ["dashboard", "live", "matches", "bracket", "public"]
+};
+
 const FLOW_STEPS = [
   {
     id: "auth",
@@ -68,7 +75,9 @@ const state = {
   editingMatchId: null,
   searchTerm: "",
   activeView: "dashboard",
-  theme: "light"
+  theme: "light",
+  lastChampionCelebrated: null,
+  winnerSpotlightTimer: null
 };
 
 const el = {
@@ -82,6 +91,7 @@ const el = {
   organizationSection: document.getElementById("organizationSection"),
   matchesSection: document.getElementById("matchesSection"),
   bracketSection: document.getElementById("bracketSection"),
+  bracketControls: document.getElementById("bracketControls"),
   publicSection: document.getElementById("publicSection"),
   liveBoard: document.getElementById("liveBoard"),
   liveMessage: document.getElementById("liveMessage"),
@@ -93,6 +103,7 @@ const el = {
   bracketBoard: document.getElementById("bracketBoard"),
   bracketInfo: document.getElementById("bracketInfo"),
   championBadge: document.getElementById("championBadge"),
+  fxLayer: document.getElementById("fxLayer"),
   flowCoach: document.getElementById("flowCoach"),
   flowProgressLabel: document.getElementById("flowProgressLabel"),
   flowProgressBar: document.getElementById("flowProgressBar"),
@@ -174,6 +185,7 @@ init();
 
 async function init() {
   await initializeStorage();
+  state.lastChampionCelebrated = getChampionName();
   restoreSession();
   applyTheme(state.theme);
   bindEvents();
@@ -639,6 +651,7 @@ function handleGenerateBracket() {
   const orderedTeams = mode === "random" ? shuffle([...teams]) : teams;
   state.bracket = createBracket(orderedTeams, mode);
   recalculateBracket();
+  state.lastChampionCelebrated = getChampionName();
   persistBracket();
   renderBracket();
 
@@ -649,6 +662,9 @@ function handleGenerateBracket() {
 }
 
 function handleBracketBoardClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+
   const button = event.target.closest(".save-result-btn");
   if (!button) {
     return;
@@ -697,17 +713,63 @@ function saveBracketResult(roundIndex, matchIndex) {
   }
 
   const match = state.bracket.rounds[roundIndex][matchIndex];
+  const previousWinner = match.winner;
   match.homeScore = homeScore;
   match.awayScore = awayScore;
   match.homePenalties = homePenalty;
   match.awayPenalties = awayPenalty;
 
   recalculateBracket();
-  persistBracket();
-  renderBracket();
-  setMessage(el.bracketInfo, "Ergebnis gespeichert. Sieger wurde weitergesetzt.", "success");
-  pushNotification(`Ergebnis aktualisiert in Runde ${roundIndex + 1}, Match ${matchIndex + 1}.`, "success");
-  renderFlowCoach();
+  const updatedMatch = state.bracket.rounds[roundIndex][matchIndex];
+  const championAfter = getChampionName();
+  const winnerChanged = Boolean(updatedMatch?.winner && updatedMatch.winner !== previousWinner);
+
+  const viewAtSave = state.activeView;
+  const pageScrollYAtSave = window.scrollY;
+  const pageScrollXAtSave = window.scrollX;
+  const bracketScrollLeftAtSave = el.bracketBoard?.scrollLeft || 0;
+  const bracketScrollTopAtSave = el.bracketBoard?.scrollTop || 0;
+
+  if (winnerChanged) {
+    triggerMatchWinnerCelebration(roundIndex, matchIndex, updatedMatch.winner);
+  }
+
+  if (championAfter && championAfter !== "BYE" && championAfter !== state.lastChampionCelebrated) {
+    launchChampionCelebration(championAfter);
+  }
+
+  if (!championAfter || championAfter === "BYE") {
+    state.lastChampionCelebrated = null;
+  }
+
+  const finalizeUpdate = () => {
+    persistBracket();
+    renderBracket();
+
+    if (state.activeView !== viewAtSave) {
+      state.activeView = viewAtSave;
+      applyViewVisibility();
+      updateNavState();
+    }
+
+    window.requestAnimationFrame(() => {
+      if (el.bracketBoard) {
+        el.bracketBoard.scrollLeft = bracketScrollLeftAtSave;
+        el.bracketBoard.scrollTop = bracketScrollTopAtSave;
+      }
+      window.scrollTo({ left: pageScrollXAtSave, top: pageScrollYAtSave, behavior: "auto" });
+    });
+
+    setMessage(el.bracketInfo, "Ergebnis gespeichert. Sieger wurde weitergesetzt.", "success");
+    pushNotification(`Ergebnis aktualisiert in Runde ${roundIndex + 1}, Match ${matchIndex + 1}.`, "success");
+    renderFlowCoach();
+  };
+
+  if (winnerChanged) {
+    window.setTimeout(finalizeUpdate, 700);
+  } else {
+    finalizeUpdate();
+  }
 }
 
 function renderBracket() {
@@ -745,6 +807,8 @@ function renderBracket() {
     round.forEach((matchup, matchIndex) => {
       const card = document.createElement("article");
       card.className = "bracket-match";
+      card.dataset.round = String(roundIndex);
+      card.dataset.match = String(matchIndex);
       if (matchup.winner) {
         card.classList.add("resolved");
       }
@@ -1427,11 +1491,26 @@ function isPublicHashMode() {
 function renderLiveCenter() {
   el.liveBoard.innerHTML = "";
 
-  if (!state.matches.length) {
+  const liveContext = buildLiveContext();
+
+  if (!state.matches.length && !liveContext.scoredMatches.length) {
     setMessage(el.liveMessage, "Noch keine Spiele geplant.", "error");
     return;
   }
 
+  renderLiveScoreboardPanel(liveContext);
+  renderLiveBucket("Live jetzt", liveContext.buckets.live);
+  renderLiveBucket("Als naechstes", liveContext.buckets.upcoming.slice(0, 6));
+  renderLiveBucket("Bereits gespielt", liveContext.buckets.done.slice(0, 6));
+
+  setMessage(
+    el.liveMessage,
+    `Live: ${liveContext.buckets.live.length} | Demnaechst: ${liveContext.buckets.upcoming.length} | Gespielt: ${liveContext.buckets.done.length} | Resultate: ${liveContext.scoredMatches.length}`,
+    "success"
+  );
+}
+
+function buildLiveContext() {
   const now = new Date();
   const buckets = {
     live: [],
@@ -1444,25 +1523,170 @@ function renderLiveCenter() {
     if (Number.isNaN(kickoff.getTime())) {
       return;
     }
+
     const diffMinutes = Math.round((kickoff.getTime() - now.getTime()) / 60000);
+    const bucketMatch = { ...match, kickoff, diffMinutes };
+
     if (diffMinutes <= 0 && diffMinutes >= -120) {
-      buckets.live.push(match);
+      buckets.live.push(bucketMatch);
     } else if (diffMinutes > 0) {
-      buckets.upcoming.push(match);
+      buckets.upcoming.push(bucketMatch);
     } else {
-      buckets.done.push(match);
+      buckets.done.push(bucketMatch);
     }
   });
 
-  renderLiveBucket("Live jetzt", buckets.live);
-  renderLiveBucket("Als naechstes", buckets.upcoming.slice(0, 6));
-  renderLiveBucket("Bereits gespielt", buckets.done.slice(0, 6));
+  const scoredMatches = [];
+  state.bracket?.rounds?.forEach((round, roundIndex) => {
+    round.forEach((match, matchIndex) => {
+      if (!isValidScore(match.homeScore) || !isValidScore(match.awayScore)) {
+        return;
+      }
 
-  setMessage(
-    el.liveMessage,
-    `Live: ${buckets.live.length} | Demnaechst: ${buckets.upcoming.length} | Gespielt: ${buckets.done.length}`,
-    "success"
-  );
+      scoredMatches.push({
+        roundIndex,
+        matchIndex,
+        roundLabel: getRoundLabel(roundIndex, state.bracket.rounds.length),
+        home: match.home,
+        away: match.away,
+        homeScore: match.homeScore,
+        awayScore: match.awayScore,
+        homePenalties: match.homePenalties,
+        awayPenalties: match.awayPenalties,
+        winner: match.winner
+      });
+    });
+  });
+
+  scoredMatches.sort((a, b) => {
+    if (a.roundIndex !== b.roundIndex) {
+      return b.roundIndex - a.roundIndex;
+    }
+
+    return b.matchIndex - a.matchIndex;
+  });
+
+  return {
+    now,
+    buckets,
+    scoredMatches,
+    featured: buckets.live[0] || scoredMatches[0] || buckets.upcoming[0] || buckets.done[0] || null
+  };
+}
+
+function renderLiveScoreboardPanel(liveContext) {
+  const block = document.createElement("article");
+  block.className = "live-scoreboard";
+
+  const header = document.createElement("div");
+  header.className = "live-scoreboard-header";
+
+  const titleWrap = document.createElement("div");
+  titleWrap.className = "live-scoreboard-title-wrap";
+
+  const title = document.createElement("h3");
+  title.textContent = "Live Scoreboard";
+  titleWrap.appendChild(title);
+
+  const subtitle = document.createElement("p");
+  subtitle.className = "live-scoreboard-subtitle";
+  subtitle.textContent = liveContext.featured
+    ? "Aktuelle Spiele, letzte Resultate und naechste Anpfiffe in einem Blick."
+    : "Noch keine passenden Spiele fuer das Scoreboard vorhanden.";
+  titleWrap.appendChild(subtitle);
+
+  const status = document.createElement("span");
+  status.className = "live-status-chip";
+  status.textContent = liveContext.buckets.live.length
+    ? `${liveContext.buckets.live.length} LIVE`
+    : liveContext.scoredMatches.length
+      ? `${liveContext.scoredMatches.length} RESULTATE`
+      : `${liveContext.buckets.upcoming.length} ANSTEHEND`;
+
+  header.appendChild(titleWrap);
+  header.appendChild(status);
+
+  const content = document.createElement("div");
+  content.className = "live-scoreboard-content";
+
+  const featured = document.createElement("div");
+  featured.className = "live-scoreboard-featured";
+
+  const featuredLabel = document.createElement("p");
+  featuredLabel.className = "live-scoreboard-kicker";
+  featuredLabel.textContent = liveContext.buckets.live.length
+    ? "Gerade live"
+    : liveContext.scoredMatches.length
+      ? "Letztes Resultat"
+      : "Naechstes Spiel";
+  featured.appendChild(featuredLabel);
+
+  if (liveContext.featured) {
+    const isBracketMatch = Boolean(liveContext.featured.roundLabel);
+    const scoreText = isBracketMatch
+      ? formatBracketScore(liveContext.featured)
+      : formatFixtureScore(liveContext.featured);
+
+    const matchLine = document.createElement("p");
+    matchLine.className = "live-scoreboard-match";
+    matchLine.textContent = `${displayTeamName(liveContext.featured.home || liveContext.featured.heimTeam)} vs ${displayTeamName(liveContext.featured.away || liveContext.featured.gastTeam)}`;
+    featured.appendChild(matchLine);
+
+    const scoreLine = document.createElement("p");
+    scoreLine.className = "live-scoreboard-score";
+    scoreLine.textContent = scoreText;
+    featured.appendChild(scoreLine);
+
+    const meta = document.createElement("p");
+    meta.className = "live-scoreboard-meta";
+    meta.textContent = isBracketMatch
+      ? `${liveContext.featured.roundLabel} | Sieger: ${displayTeamName(liveContext.featured.winner)}`
+      : `${liveContext.featured.datum} ${liveContext.featured.uhrzeit} | ${liveContext.featured.platz}`;
+    featured.appendChild(meta);
+  } else {
+    const empty = document.createElement("p");
+    empty.className = "message";
+    empty.textContent = "Noch keine Live-Daten vorhanden.";
+    featured.appendChild(empty);
+  }
+
+  content.appendChild(featured);
+
+  const stats = document.createElement("ul");
+  stats.className = "live-scoreboard-stats";
+  stats.innerHTML = `
+    <li><span>Live</span><strong>${liveContext.buckets.live.length}</strong></li>
+    <li><span>Naechstes</span><strong>${liveContext.buckets.upcoming.length}</strong></li>
+    <li><span>Beendet</span><strong>${liveContext.buckets.done.length}</strong></li>
+    <li><span>Resultate</span><strong>${liveContext.scoredMatches.length}</strong></li>
+  `;
+  content.appendChild(stats);
+
+  block.appendChild(header);
+  block.appendChild(content);
+  el.liveBoard.appendChild(block);
+}
+
+function formatFixtureScore(match) {
+  const hasScore = isValidScore(match.homeScore) && isValidScore(match.awayScore);
+  if (hasScore) {
+    return `${match.homeScore}:${match.awayScore}`;
+  }
+
+  if (match.diffMinutes <= 0 && match.diffMinutes >= -120) {
+    return "LIVE";
+  }
+
+  return "offen";
+}
+
+function formatBracketScore(match) {
+  const scoreText = `${match.homeScore}:${match.awayScore}`;
+  if (isValidScore(match.homePenalties) && isValidScore(match.awayPenalties) && match.homePenalties !== match.awayPenalties) {
+    return `${scoreText} (${match.homePenalties}:${match.awayPenalties})`;
+  }
+
+  return scoreText;
 }
 
 function renderLiveBucket(title, matches) {
@@ -1489,7 +1713,14 @@ function renderLiveBucket(title, matches) {
     .forEach((match) => {
       const li = document.createElement("li");
       li.className = "list-item-row";
-      li.innerHTML = `<span><strong>${match.heimTeam}</strong> vs <strong>${match.gastTeam}</strong> | ${match.datum} ${match.uhrzeit} | ${match.platz}</span>`;
+
+      const scoreText = formatFixtureScore(match);
+      const statusText = match.diffMinutes <= 0 && match.diffMinutes >= -120 ? "LIVE" : match.diffMinutes > 0 ? "Anstehend" : "Beendet";
+
+      li.innerHTML = `
+        <span><strong>${match.heimTeam}</strong> vs <strong>${match.gastTeam}</strong> | ${scoreText} | ${match.datum} ${match.uhrzeit} | ${match.platz}</span>
+        <span class="live-row-chip">${statusText}</span>
+      `;
       list.appendChild(li);
     });
 
@@ -1723,6 +1954,7 @@ function refreshUI() {
   } else {
     el.sessionBox.querySelector(".session-label").textContent = "Eingeloggt";
     el.roleLabel.textContent = ROLE_LABELS[state.currentUser.role] || state.currentUser.role;
+    enforceActiveViewAccess();
   }
 
   applyViewVisibility();
@@ -1747,6 +1979,10 @@ function refreshUI() {
 
 function setActiveView(view) {
   if (!["dashboard", "live", "organization", "matches", "bracket", "public"].includes(view)) {
+    return;
+  }
+
+  if (!canAccessView(view)) {
     return;
   }
 
@@ -1847,75 +2083,98 @@ function renderFlowCoach() {
 
 function getSuggestedFlowAction() {
   const isLoggedIn = Boolean(state.currentUser);
+  const adapt = (action) => adaptActionToPermissions(action);
 
   if (!isLoggedIn) {
-    return {
+    return adapt({
       id: "go-auth",
       primaryLabel: "Zur Anmeldung springen",
       view: "dashboard",
       hint: "Starte mit Login oder Registrierung."
-    };
+    });
   }
 
   if (state.matches.length < 2) {
-    return {
+    return adapt({
       id: "go-create-match",
       primaryLabel: "Naechstes Spiel anlegen",
       view: "dashboard",
-      hint: "Lege zuerst mindestens zwei Spiele an."
-    };
+      hint: canManageMatches()
+        ? "Lege zuerst mindestens zwei Spiele an."
+        : "Du bist im Ansichtsmodus. Warte auf Spielplanung durch Admin/Trainer/Schiri."
+    });
   }
 
   if (!state.groups.length && !state.bracket?.rounds?.length) {
-    return {
+    return adapt({
       id: "go-organization",
       primaryLabel: "Gruppen oder K.-o. starten",
       view: "organization",
-      hint: "Jetzt die Turnierstruktur erstellen."
-    };
+      hint: canGenerateStructure()
+        ? "Jetzt die Turnierstruktur erstellen."
+        : "Turnierstruktur wird von Admin/Trainer erstellt."
+    });
   }
 
   if (!state.bracket?.rounds?.length) {
-    return {
+    return adapt({
       id: "go-bracket",
       primaryLabel: "K.-o.-Baum generieren",
       view: "bracket",
-      hint: "Uebernimm Teams und starte den Turnierbaum."
-    };
+      hint: canGenerateStructure()
+        ? "Uebernimm Teams und starte den Turnierbaum."
+        : "Sobald der Baum erstellt ist, kannst du ihn hier live verfolgen."
+    });
   }
 
   if (!hasBracketResult()) {
-    return {
+    return adapt({
       id: "go-enter-results",
       primaryLabel: "Erstes Ergebnis eintragen",
       view: "bracket",
-      hint: "Trage ein Match-Ergebnis ein, damit der Flow weiterlaeuft."
-    };
+      hint: canEnterResults()
+        ? "Trage ein Match-Ergebnis ein, damit der Flow weiterlaeuft."
+        : "Ergebnisse werden von Admin oder Schiri eingetragen."
+    });
   }
 
   if (!getChampionName()) {
-    return {
+    return adapt({
       id: "go-finish-bracket",
       primaryLabel: "Turnier bis Finale ausspielen",
       view: "bracket",
       hint: "Der Champion wird automatisch gesetzt, sobald alle Runden fertig sind."
-    };
+    });
   }
 
   if (isAdmin() && !state.archives.length) {
-    return {
+    return adapt({
       id: "go-archive",
       primaryLabel: "Turnier archivieren",
       view: "organization",
       hint: "Als Abschluss den Stand archivieren und Awards pflegen."
-    };
+    });
   }
 
-  return {
+  return adapt({
     id: "go-public",
     primaryLabel: "Public-Ansicht oeffnen",
     view: "public",
     hint: "Flow komplett. Teile jetzt den Public-Link."
+  });
+}
+
+function adaptActionToPermissions(action) {
+  if (canAccessView(action.view)) {
+    return action;
+  }
+
+  const fallback = getAllowedViewsForCurrentRole()[0] || "dashboard";
+  return {
+    id: "go-fallback",
+    primaryLabel: "Zum Bereich",
+    view: fallback,
+    hint: "Deine Rolle ist auf bestimmte Bereiche beschraenkt."
   };
 }
 
@@ -2004,13 +2263,36 @@ function applyViewVisibility() {
   toggleElement(el.organizationSection, onOrganization);
   toggleElement(el.matchesSection, onMatches);
   toggleElement(el.bracketSection, onBracket);
+  if (el.bracketControls) {
+    toggleElement(el.bracketControls, onBracket && canGenerateStructure());
+  }
   toggleElement(el.publicSection, onPublic);
 }
 
 function updateNavState() {
   el.navButtons.forEach((button) => {
+    const canSeeButton = canAccessView(button.dataset.view);
+    button.classList.toggle("hidden", !canSeeButton);
     button.classList.toggle("is-active", button.dataset.view === state.activeView);
   });
+}
+
+function getAllowedViewsForCurrentRole() {
+  const role = currentRole();
+  return ROLE_VIEW_ACCESS[role] || ROLE_VIEW_ACCESS.viewer;
+}
+
+function canAccessView(view) {
+  return getAllowedViewsForCurrentRole().includes(view);
+}
+
+function enforceActiveViewAccess() {
+  if (canAccessView(state.activeView)) {
+    return;
+  }
+
+  const fallbackView = getAllowedViewsForCurrentRole()[0] || "dashboard";
+  state.activeView = fallbackView;
 }
 
 function updateStats() {
@@ -2176,6 +2458,7 @@ function displayTeamName(value) {
 
 function updateChampionBadge(champion) {
   if (!champion || champion === "BYE") {
+    el.championBadge.classList.remove("is-celebrating");
     el.championBadge.classList.add("hidden");
     el.championBadge.textContent = "Champion: -";
     return;
@@ -2183,6 +2466,86 @@ function updateChampionBadge(champion) {
 
   el.championBadge.classList.remove("hidden");
   el.championBadge.textContent = `Champion: ${champion}`;
+}
+
+function triggerMatchWinnerCelebration(roundIndex, matchIndex, winner) {
+  const roundLabel = getRoundLabel(roundIndex, state.bracket?.rounds?.length || 1);
+  showWinnerSpotlight(`${displayTeamName(winner)} gewinnt ${roundLabel}!`, "winner");
+  popResolvedCard(roundIndex, matchIndex);
+  spawnConfetti(20);
+}
+
+function launchChampionCelebration(champion) {
+  state.lastChampionCelebrated = champion;
+  el.championBadge.classList.add("is-celebrating");
+  window.setTimeout(() => el.championBadge.classList.remove("is-celebrating"), 1800);
+  showWinnerSpotlight(`Champion: ${displayTeamName(champion)}!`, "champion");
+  spawnConfetti(70);
+  pushNotification(`Champion steht fest: ${displayTeamName(champion)}.`, "success", `champion-${champion}`);
+}
+
+function popResolvedCard(roundIndex, matchIndex) {
+  const selector = `.bracket-match[data-round="${roundIndex}"][data-match="${matchIndex}"]`;
+  const card = el.bracketBoard.querySelector(selector);
+  if (!card) {
+    return;
+  }
+
+  card.classList.remove("resolved-celebrate");
+  void card.offsetWidth;
+  card.classList.add("resolved-celebrate");
+  window.setTimeout(() => card.classList.remove("resolved-celebrate"), 950);
+}
+
+function showWinnerSpotlight(message, variant) {
+  if (!el.fxLayer) {
+    return;
+  }
+
+  const existing = el.fxLayer.querySelector(".winner-spotlight");
+  if (existing) {
+    existing.remove();
+  }
+
+  const spotlight = document.createElement("div");
+  spotlight.className = `winner-spotlight ${variant}`;
+  spotlight.innerHTML = `
+    <div class="winner-spotlight-card">
+      <p class="winner-spotlight-kicker">Siegermoment</p>
+      <p class="winner-spotlight-title">${message}</p>
+    </div>
+  `;
+  el.fxLayer.appendChild(spotlight);
+
+  if (state.winnerSpotlightTimer) {
+    window.clearTimeout(state.winnerSpotlightTimer);
+  }
+
+  state.winnerSpotlightTimer = window.setTimeout(() => {
+    spotlight.classList.add("is-exit");
+    window.setTimeout(() => spotlight.remove(), 360);
+  }, 2100);
+}
+
+function spawnConfetti(amount) {
+  if (!el.fxLayer) {
+    return;
+  }
+
+  const colors = ["#0e7a6f", "#114d92", "#f4a524", "#d94b4b", "#ffffff"];
+  for (let index = 0; index < amount; index += 1) {
+    const piece = document.createElement("span");
+    piece.className = "confetti-piece";
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = `${Math.random() * 220}ms`;
+    piece.style.transform = `translateY(-12vh) rotate(${Math.floor(Math.random() * 360)}deg)`;
+    el.fxLayer.appendChild(piece);
+
+    window.setTimeout(() => {
+      piece.remove();
+    }, 2300);
+  }
 }
 
 function getChampionName() {
@@ -2214,7 +2577,7 @@ function isReferee() {
 }
 
 function canManageMatches() {
-  return isAdmin() || isTrainer();
+  return isAdmin() || isTrainer() || isReferee();
 }
 
 function canGenerateStructure() {
