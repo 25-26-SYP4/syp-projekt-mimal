@@ -16,6 +16,7 @@
   --error: #b73b3b;
   --accent: #f4a524;
   --done: #1c9b67;
+  --champion: #f4a524;
 }
 
 body[data-theme="dark"] {
