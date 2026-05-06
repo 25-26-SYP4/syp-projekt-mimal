@@ -1,1 +1,415 @@
-{"bracket":null,"groups":[],"players":{},"notifications":[],"archives":[],"awards":{"mvp":"","topScorer":"","fairPlayTeam":""},"media":[]}
+{
+  "bracket": {
+    "mode": "seeded",
+    "teams": [
+      "Grsk",
+      "Gasp",
+      "Fc Mimal",
+      "Sv Socrates"
+    ],
+    "rounds": [
+      [
+        {
+          "home": "Grsk",
+          "away": "Gasp",
+          "homeScore": 2,
+          "awayScore": 1,
+          "homePenalties": null,
+          "awayPenalties": null,
+          "winner": "Grsk"
+        },
+        {
+          "home": "Fc Mimal",
+          "away": "Sv Socrates",
+          "homeScore": 1,
+          "awayScore": 2,
+          "homePenalties": null,
+          "awayPenalties": null,
+          "winner": "Sv Socrates"
+        }
+      ],
+      [
+        {
+          "home": "Grsk",
+          "away": "Sv Socrates",
+          "homeScore": null,
+          "awayScore": null,
+          "homePenalties": null,
+          "awayPenalties": null,
+          "winner": null
+        }
+      ]
+    ]
+  },
+  "groups": [
+    {
+      "name": "Gruppe A",
+      "teams": [
+        {
+          "name": "Grsk",
+          "points": 0,
+          "goalsFor": 0,
+          "goalsAgainst": 0
+        },
+        {
+          "name": "Gasp",
+          "points": 0,
+          "goalsFor": 0,
+          "goalsAgainst": 0
+        },
+        {
+          "name": "Fc Mimal",
+          "points": 0,
+          "goalsFor": 0,
+          "goalsAgainst": 0
+        },
+        {
+          "name": "Sv Socrates",
+          "points": 0,
+          "goalsFor": 0,
+          "goalsAgainst": 0
+        }
+      ]
+    }
+  ],
+  "players": {},
+  "notifications": [
+    {
+      "id": "819aa204-6472-4837-b76d-b6e5eae1de16",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 2.",
+      "type": "success",
+      "createdAt": "2026-04-29T11:49:51.783Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "54e9000b-a66f-46f9-96ed-2f891d3554f7",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-04-29T11:49:00.490Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "17eb3146-d6fc-4eb8-9167-62f8af28b98f",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 1.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:54:19.885Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "c4bb87ea-afc4-4286-9e72-35485e1ff85b",
+      "text": "Willkommen toni.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:54:03.381Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "ff4e31a7-9478-4cca-bf05-89d1d7317147",
+      "text": "Willkommen alex.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:52:56.977Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "f7fe8bfa-ff26-42ff-a2f0-f158b2af82ac",
+      "text": "Gruppenphase wurde neu erstellt.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:52:47.340Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "5fe5ce47-f0d7-4fef-a99c-d9c69e1e877c",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:52:29.588Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "93c4cfde-8b89-4f1b-8a55-c870d27bfa1a",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 1.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:49:34.001Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "74a49afa-5196-4c28-8379-aa58d4567df1",
+      "text": "K.-o.-Baum erstellt mit 4 Teams.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:49:27.366Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "ea6649f9-0da6-415f-a75c-1d8295573008",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 1.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:49:23.036Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "34bdeaf3-cb39-454a-b879-2369ea11fc1a",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:49:16.828Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "2ea22159-7b52-4dca-aa4e-b9147370fa55",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:49:16.740Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "3d60fc3e-5c58-495f-b7d1-a50192e51cd6",
+      "text": "Willkommen alex.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:47:28.170Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "6a669682-d62c-47eb-8310-9e48f4b6474d",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 1.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:45:18.026Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "822891e2-a10d-43b6-bfb3-6ecb202207cb",
+      "text": "K.-o.-Baum erstellt mit 4 Teams.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:45:09.041Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "f2431e9e-9007-4f02-b12a-37a4ccc19b21",
+      "text": "Champion steht fest: Grsk.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:41:59.741Z",
+      "read": true,
+      "key": "champion-Grsk"
+    },
+    {
+      "id": "3831ec88-b01c-4ffe-abe4-3064b07e13a1",
+      "text": "K.-o.-Baum erstellt mit 4 Teams.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:41:52.562Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "1aa422ce-66ba-484f-8d94-b02eb38cbc11",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 2.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:38:21.231Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "90ddc181-60f1-4f90-879e-09cebbe7f907",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 1.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:38:09.568Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "3220ee83-37fa-4b5b-aa78-4f46f03c8988",
+      "text": "Champion steht fest: Gasp.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:38:09.561Z",
+      "read": true,
+      "key": "champion-Gasp"
+    },
+    {
+      "id": "2f9c6354-45ba-4364-bb6d-14725e308157",
+      "text": "K.-o.-Baum erstellt mit 4 Teams.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:38:02.796Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "b559b175-dd25-4494-81df-3f57933ab63e",
+      "text": "Ergebnis aktualisiert in Runde 2, Match 1.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:37:50.714Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "bd09d5c5-dcea-46d4-89a7-43e60114e3d2",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 1.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:37:46.138Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "b2d6e940-0861-4af5-ae31-0f53ae979bcc",
+      "text": "Erinnerung: Grsk vs Sv Socrates startet in ca. 23 Minuten.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:37:28.247Z",
+      "read": true,
+      "key": "upcoming-b7eed64f-9f54-4f21-8bc0-1cb073e71952"
+    },
+    {
+      "id": "cd0d0c97-727e-4ae9-900a-4a5aaa464d93",
+      "text": "Spiel geplant: Grsk vs Sv Socrates am 2026-03-26 10:00.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:37:28.244Z",
+      "read": true,
+      "key": "match-plan-b7eed64f-9f54-4f21-8bc0-1cb073e71952"
+    },
+    {
+      "id": "da42839a-fd2f-4277-8779-91d6429b0f39",
+      "text": "Erinnerung: Fc Mimal vs Gasp startet in ca. 23 Minuten.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:37:18.687Z",
+      "read": true,
+      "key": "upcoming-d77be169-123b-4f5b-b7ec-9e4cdc85a1ce"
+    },
+    {
+      "id": "3f71f74c-a8e4-4219-9f52-449062621e6d",
+      "text": "Spiel geplant: Fc Mimal vs Gasp am 2026-03-26 10:00.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:37:18.683Z",
+      "read": true,
+      "key": "match-plan-d77be169-123b-4f5b-b7ec-9e4cdc85a1ce"
+    },
+    {
+      "id": "422244d5-dfd9-4652-86e1-ebca9466b473",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:37:00.502Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "6a3bd40e-9235-4d10-ad57-aaad64d0f21c",
+      "text": "Willkommen schiri.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:30:08.339Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "a8660bcf-7f49-4f4c-87a1-44070ae52d96",
+      "text": "Spiel geloescht: Fc Mimal vs Sv Socrates.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:29:41.977Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "6431f476-6709-4aba-9d93-49d0e6cb809a",
+      "text": "Turnier archiviert. Champion: Sv Socrates.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:28:48.858Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "1c1cdc2e-379c-464e-998b-47c4f668dbdf",
+      "text": "Ergebnis aktualisiert in Runde 2, Match 1.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:28:31.946Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "a2684604-2201-434d-ac64-914ce4fae24a",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 2.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:28:15.834Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "b0013771-fd19-4362-b110-e3e2ad94c74d",
+      "text": "Ergebnis aktualisiert in Runde 1, Match 1.",
+      "type": "success",
+      "createdAt": "2026-03-26T08:28:04.764Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "0f0c6423-e74b-48fd-b089-b45f633fc290",
+      "text": "K.-o.-Baum erstellt mit 4 Teams.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:27:48.680Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "a4cc1cde-8157-4ceb-8497-096894482f8a",
+      "text": "Gruppenphase wurde neu erstellt.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:27:33.122Z",
+      "read": true,
+      "key": null
+    },
+    {
+      "id": "c09de1df-d73b-434c-bd1f-ecace3a335e6",
+      "text": "Erinnerung: Grsk vs Gasp startet in ca. 33 Minuten.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:27:21.778Z",
+      "read": true,
+      "key": "upcoming-99754f31-09bf-466e-bba7-7e73612737eb"
+    },
+    {
+      "id": "0a35d323-97ca-47e5-9278-3f86896aab1c",
+      "text": "Spiel geplant: Grsk vs Gasp am 2026-03-26 10:00.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:27:21.774Z",
+      "read": true,
+      "key": "match-plan-99754f31-09bf-466e-bba7-7e73612737eb"
+    },
+    {
+      "id": "70a379d6-6e0b-44ef-b534-e19768508873",
+      "text": "Erinnerung: Fc Mimal vs Sv Socrates startet in ca. 33 Minuten.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:27:11.704Z",
+      "read": true,
+      "key": "upcoming-bd9e13bb-3355-4dfd-a346-0e735c3526c4"
+    },
+    {
+      "id": "4af7ec2b-bec9-448f-a420-755b6c73b032",
+      "text": "Spiel geplant: Fc Mimal vs Sv Socrates am 2026-03-26 10:00.",
+      "type": "info",
+      "createdAt": "2026-03-26T08:27:11.703Z",
+      "read": true,
+      "key": "match-plan-bd9e13bb-3355-4dfd-a346-0e735c3526c4"
+    }
+  ],
+  "archives": [
+    {
+      "id": "12119503-3704-48c5-a9c5-c5e83c289f31",
+      "createdAt": "2026-03-26T08:28:48.855Z",
+      "champion": "Sv Socrates",
+      "totalMatches": 2,
+      "totalTeams": 4,
+      "groupsCount": 1,
+      "mode": "seeded"
+    }
+  ],
+  "awards": {
+    "mvp": "",
+    "topScorer": "",
+    "fairPlayTeam": ""
+  },
+  "media": []
+}

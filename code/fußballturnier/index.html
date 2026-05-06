@@ -73,7 +73,7 @@
 
     <section class="card hidden" id="liveSection" data-view="live">
       <div class="top-row">
-        <h2>Live Match-Center</h2>
+        <h2>Live Scoreboard</h2>
         <button type="button" id="refreshLiveBtn" class="secondary">Aktualisieren</button>
       </div>
       <p id="liveMessage" class="message"></p>
@@ -322,7 +322,7 @@
         <h2>Turnierbaum</h2>
         <p class="bracket-subtitle">Automatisch aus den vorhandenen Teams erzeugt</p>
       </div>
-      <div class="bracket-controls">
+      <div class="bracket-controls" id="bracketControls">
         <div class="form-grid compact">
           <label for="drawMode">Auslosung</label>
           <select id="drawMode">
@@ -343,6 +343,7 @@
       <div id="bracketBoard" class="bracket-board"></div>
     </section>
   </main>
+  <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
   <script src="script.js"></script>
 </body>
 </html>

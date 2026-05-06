@@ -1,1 +1,29 @@
-[]
+[
+  {
+    "id": "99754f31-09bf-466e-bba7-7e73612737eb",
+    "datum": "2026-03-26",
+    "uhrzeit": "10:00",
+    "heimTeam": "Grsk",
+    "gastTeam": "Gasp",
+    "platz": "2",
+    "schiri": "Asdas"
+  },
+  {
+    "id": "d77be169-123b-4f5b-b7ec-9e4cdc85a1ce",
+    "datum": "2026-03-26",
+    "uhrzeit": "10:00",
+    "heimTeam": "Fc Mimal",
+    "gastTeam": "Gasp",
+    "platz": "1",
+    "schiri": "Asd"
+  },
+  {
+    "id": "b7eed64f-9f54-4f21-8bc0-1cb073e71952",
+    "datum": "2026-03-26",
+    "uhrzeit": "10:00",
+    "heimTeam": "Grsk",
+    "gastTeam": "Sv Socrates",
+    "platz": "2",
+    "schiri": "Asd"
+  }
+]
