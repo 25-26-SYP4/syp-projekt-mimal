@@ -2107,21 +2107,35 @@ function iwos(value) {
 }
 
 function normalizeName(value) {
-  return value
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/(^|\s)(\p{L})/gu, (match) => match.toUpperCase());
+  const rawValue = String(value ?? "");
+  const trimmedValue = trimWhitespace(rawValue);
+  const singleSpacedValue = collapseWhitespace(trimmedValue);
+  const capitalizedValue = capitalizeFirstLetters(singleSpacedValue);
+  return capitalizedValue;
+}
+
+function trimWhitespace(value) {
+  return value.trim();
+}
+
+function collapseWhitespace(value) {
+  return value.replace(/\s+/g, " ");
+}
+
+function capitalizeFirstLetters(value) {
+  return value.replace(/(^|\s)(\p{L})/gu, (match) => match.toUpperCase());
 }
 
 function parseTeamsFromInput(input) {
-  const lines = input
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const normalizedInput = normalizeLineEndings(input);
+  const rawLines = normalizedInput.split("\n");
+  const trimmedLines = rawLines.map((line) => line.trim());
+  const nonEmptyLines = trimmedLines.filter(Boolean);
 
-  const seen = new Set();
   const unique = [];
-  lines.forEach((team) => {
+  const seen = new Set();
+
+  nonEmptyLines.forEach((team) => {
     const key = team.toLowerCase();
     if (!seen.has(key)) {
       seen.add(key);
@@ -2130,6 +2144,10 @@ function parseTeamsFromInput(input) {
   });
 
   return unique;
+}
+
+function normalizeLineEndings(value) {
+  return String(value).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }
 
 function shuffle(items) {
@@ -2149,26 +2167,35 @@ function nextPowerOfTwo(value) {
 }
 
 function parseScore(value) {
-  if (value === "" || value === null || value === undefined) {
+  const isEmptyValue = value === "" || value === null || value === undefined;
+  if (isEmptyValue) {
     return null;
   }
 
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0) {
+  const isIntegerValue = Number.isInteger(parsed);
+  const isNonNegative = parsed >= 0;
+
+  if (!isIntegerValue || !isNonNegative) {
     return null;
   }
+
   return parsed;
 }
 
 function parseOptionalScore(value) {
-  if (value === "" || value === null || value === undefined) {
+  const isMissingValue = value === "" || value === null || value === undefined;
+  if (isMissingValue) {
     return null;
   }
+
   return parseScore(value);
 }
 
 function isValidScore(value) {
-  return Number.isInteger(value) && value >= 0;
+  const hasInteger = Number.isInteger(value);
+  const isZeroOrHigher = value >= 0;
+  return hasInteger && isZeroOrHigher;
 }
 
 function displayTeamName(value) {
