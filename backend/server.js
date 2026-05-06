@@ -114,12 +114,13 @@ function seedDefaults() {
     { id: 1, username: "admin", password_hash: bcrypt.hashSync("admin123", 10), role: "admin", created_at: now },
     { id: 2, username: "gast", password_hash: bcrypt.hashSync("gast123", 10), role: "viewer", created_at: now },
     { id: 3, username: "trainer", password_hash: bcrypt.hashSync("trainer123", 10), role: "trainer", created_at: now },
-    { id: 4, username: "schiri", password_hash: bcrypt.hashSync("schiri123", 10), role: "referee", created_at: now }
+    { id: 4, username: "schiri", password_hash: bcrypt.hashSync("schiri123", 10), role: "referee", created_at: now },
+    { id: 5, username: "user1", password_hash: bcrypt.hashSync("user123", 10), role: "viewer", created_at: now },
   ];
 
   writeJson(USERS_FILE, defaults);
 }
-
+  
 function readJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
