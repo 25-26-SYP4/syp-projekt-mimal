@@ -79,6 +79,37 @@ try {
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// ============================================================================
+// SECURITY LOGGING
+// ============================================================================
+
+/**
+ * Log security events (login attempts, access control, token issues)
+ * Never logs passwords, complete tokens, or sensitive data
+ * @param {string} event - Type of event (LOGIN_SUCCESS, LOGIN_FAILED, etc.)
+ * @param {string} username - Username involved
+ * @param {object} details - Additional details
+ */
+function logSecurityEvent(event, username, details = {}) {
+  const timestamp = new Date().toISOString();
+  const logEntry = {
+    timestamp,
+    event,
+    username: username || "unknown",
+    ...details,
+  };
+
+  // In production, send to secure logging service
+  // For now, log to console with appropriate level
+  if (event.includes("FAILED") || event.includes("DENIED")) {
+    console.warn(`[SECURITY] ${timestamp} - ${event}:`, logEntry);
+  } else if (event.includes("SUCCESS")) {
+    console.info(`[SECURITY] ${timestamp} - ${event}:`, logEntry);
+  } else {
+    console.log(`[SECURITY] ${timestamp} - ${event}:`, logEntry);
+  }
+}
+
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
@@ -201,9 +232,24 @@ function authOptional(req, _res, next) {
     const payload = jwt.verify(token, JWT_SECRET);
     const users = readJson(USERS_FILE);
     const user = users.find((u) => u.id === payload.sub);
-    req.user = user ? { id: user.id, username: user.username, role: user.role } : null;
-  } catch (_error) {
+    
+    if (user) {
+      req.user = { id: user.id, username: user.username, role: user.role };
+      logSecurityEvent("TOKEN_VERIFIED", user.username, {
+        ip: req.ip,
+        method: req.method,
+        path: req.path,
+      });
+    } else {
+      req.user = null;
+      logSecurityEvent("TOKEN_USER_NOT_FOUND", "unknown", { ip: req.ip });
+    }
+  } catch (error) {
     req.user = null;
+    logSecurityEvent("TOKEN_INVALID", "unknown", {
+      ip: req.ip,
+      reason: error.message,
+    });
   }
 
   next();
@@ -211,6 +257,11 @@ function authOptional(req, _res, next) {
 
 function requireAuth(req, res, next) {
   if (!req.user) {
+    logSecurityEvent("AUTH_REQUIRED_DENIED", "unknown", {
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+    });
     return res.status(401).json({ message: "Nicht eingeloggt." });
   }
   return next();
@@ -219,10 +270,22 @@ function requireAuth(req, res, next) {
 function requireRole(roles) {
   return (req, res, next) => {
     if (!req.user) {
+      logSecurityEvent("AUTH_REQUIRED_DENIED", "unknown", {
+        ip: req.ip,
+        method: req.method,
+        path: req.path,
+      });
       return res.status(401).json({ message: "Nicht eingeloggt." });
     }
 
     if (!roles.includes(req.user.role)) {
+      logSecurityEvent("ROLE_DENIED", req.user.username, {
+        ip: req.ip,
+        method: req.method,
+        path: req.path,
+        required_roles: roles,
+        user_role: req.user.role,
+      });
       return res.status(403).json({ message: "Keine Berechtigung." });
     }
     return next();
@@ -517,16 +580,28 @@ app.post("/api/auth/login", (req, res) => {
   const cleanName = cleanUsername(username);
 
   if (!cleanName || !password) {
+    logSecurityEvent("LOGIN_INVALID_INPUT", "unknown", {
+      ip: req.ip,
+      reason: "Missing credentials",
+    });
     return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
   const usernameError = validateUsername(cleanName);
   if (usernameError) {
+    logSecurityEvent("LOGIN_INVALID_USERNAME", cleanName, {
+      ip: req.ip,
+      reason: usernameError,
+    });
     return res.status(400).json({ message: usernameError });
   }
 
   const passwordError = validatePassword(password);
   if (passwordError) {
+    logSecurityEvent("LOGIN_INVALID_PASSWORD_FORMAT", cleanName, {
+      ip: req.ip,
+      reason: passwordError,
+    });
     return res.status(400).json({ message: passwordError });
   }
 
@@ -534,16 +609,27 @@ app.post("/api/auth/login", (req, res) => {
   const user = users.find((u) => u.username === cleanName);
 
   if (!user) {
+    logSecurityEvent("LOGIN_USER_NOT_FOUND", cleanName, {
+      ip: req.ip,
+    });
     return res.status(401).json({ message: "Login fehlgeschlagen." });
   }
 
   const ok = bcrypt.compareSync(password, user.password_hash);
   if (!ok) {
+    logSecurityEvent("LOGIN_WRONG_PASSWORD", cleanName, {
+      ip: req.ip,
+    });
     return res.status(401).json({ message: "Login fehlgeschlagen." });
   }
 
   const token = jwt.sign({ sub: user.id, role: user.role, username: user.username }, JWT_SECRET, {
     expiresIn: "12h",
+  });
+
+  logSecurityEvent("LOGIN_SUCCESS", cleanName, {
+    ip: req.ip,
+    role: user.role,
   });
 
   return res.json({
@@ -569,7 +655,10 @@ app.post("/api/auth/login", (req, res) => {
  *       401:
  *         description: Not authenticated
  */
-app.post("/api/auth/logout", requireAuth, (_req, res) => {
+app.post("/api/auth/logout", requireAuth, (req, res) => {
+  logSecurityEvent("LOGOUT_SUCCESS", req.user.username, {
+    ip: req.ip,
+  });
   return res.json({ message: "Logout erfolgreich." });
 });
 
@@ -608,16 +697,28 @@ app.post("/api/auth/register", (req, res) => {
   const cleanName = cleanUsername(username);
 
   if (!cleanName || !password) {
+    logSecurityEvent("REGISTER_INVALID_INPUT", "unknown", {
+      ip: req.ip,
+      reason: "Missing credentials",
+    });
     return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
   const usernameError = validateUsername(cleanName);
   if (usernameError) {
+    logSecurityEvent("REGISTER_INVALID_USERNAME", cleanName, {
+      ip: req.ip,
+      reason: usernameError,
+    });
     return res.status(400).json({ message: usernameError });
   }
 
   const passwordError = validatePassword(password);
   if (passwordError) {
+    logSecurityEvent("REGISTER_INVALID_PASSWORD_FORMAT", cleanName, {
+      ip: req.ip,
+      reason: passwordError,
+    });
     return res.status(400).json({ message: passwordError });
   }
 
@@ -628,6 +729,9 @@ app.post("/api/auth/register", (req, res) => {
   const exists = users.find((u) => u.username.toLowerCase() === cleanName.toLowerCase());
 
   if (exists) {
+    logSecurityEvent("REGISTER_USERNAME_TAKEN", cleanName, {
+      ip: req.ip,
+    });
     return res.status(400).json({ message: "Benutzername bereits vergeben." });
   }
 
@@ -645,6 +749,11 @@ app.post("/api/auth/register", (req, res) => {
 
   users.push(newUser);
   writeJson(USERS_FILE, users);
+
+  logSecurityEvent("REGISTER_SUCCESS", cleanName, {
+    ip: req.ip,
+    role: finalRole,
+  });
 
   return res.status(201).json({
     message: "Registrierung erfolgreich.",
@@ -693,16 +802,28 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
   const cleanName = cleanUsername(username);
 
   if (!cleanName || !password) {
+    logSecurityEvent("CREATE_ADMIN_INVALID_INPUT", req.user.username, {
+      ip: req.ip,
+      reason: "Missing credentials",
+    });
     return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
   const usernameError = validateUsername(cleanName);
   if (usernameError) {
+    logSecurityEvent("CREATE_ADMIN_INVALID_USERNAME", req.user.username, {
+      ip: req.ip,
+      reason: usernameError,
+    });
     return res.status(400).json({ message: usernameError });
   }
 
   const passwordError = validatePassword(password);
   if (passwordError) {
+    logSecurityEvent("CREATE_ADMIN_INVALID_PASSWORD_FORMAT", req.user.username, {
+      ip: req.ip,
+      reason: passwordError,
+    });
     return res.status(400).json({ message: passwordError });
   }
 
@@ -710,6 +831,9 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
   const exists = users.find((u) => u.username.toLowerCase() === cleanName.toLowerCase());
 
   if (exists) {
+    logSecurityEvent("CREATE_ADMIN_USERNAME_TAKEN", req.user.username, {
+      ip: req.ip,
+    });
     return res.status(400).json({ message: "Benutzername bereits vergeben." });
   }
 
@@ -727,6 +851,11 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
 
   users.push(newUser);
   writeJson(USERS_FILE, users);
+
+  logSecurityEvent("CREATE_ADMIN_SUCCESS", req.user.username, {
+    ip: req.ip,
+    new_admin_username: cleanName,
+  });
 
   return res.status(201).json({
     message: "Admin erstellt.",
@@ -867,6 +996,345 @@ app.get("/api/team-points", (req, res) => {
 
   res.json(points);
 });
+
+// ============================================================================
+// LIVE SECTION APIs
+// ============================================================================
+
+/**
+ * @swagger
+ * /api/live/games:
+ *   get:
+ *     summary: Get today's games
+ *     description: Returns all games scheduled for today with live status
+ *     responses:
+ *       200:
+ *         description: List of games
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   homeTeam:
+ *                     type: string
+ *                   awayTeam:
+ *                     type: string
+ *                   homeScore:
+ *                     type: integer
+ *                   awayScore:
+ *                     type: integer
+ *                   status:
+ *                     type: string
+ *                   currentMinute:
+ *                     type: integer
+ *                   displayScore:
+ *                     type: string
+ *                   penaltiesEnabled:
+ *                     type: boolean
+ */
+app.get("/api/live/games", (req, res) => {
+  const matches = readJson(MATCHES_FILE);
+  const today = new Date();
+
+  // Filter matches for today
+  const todayMatches = matches
+    .filter((match) => {
+      const matchDate = new Date(match.date || new Date());
+      return (
+        matchDate.getFullYear() === today.getFullYear() &&
+        matchDate.getMonth() === today.getMonth() &&
+        matchDate.getDate() === today.getDate()
+      );
+    })
+    .map((match) => ({
+      id: match.id || Math.random(),
+      homeTeam: match.heimTeam || "Team A",
+      awayTeam: match.gastTeam || "Team B",
+      homeScore: match.result?.heim || 0,
+      awayScore: match.result?.gast || 0,
+      status: match.status || "SCHEDULED",
+      currentMinute: match.minute || 0,
+      date: match.date || new Date().toISOString(),
+      competition: match.competition || "Tournament",
+      displayScore:
+        match.result?.heim !== undefined && match.result?.gast !== undefined
+          ? `${match.result.heim}:${match.result.gast}`
+          : "0:0",
+      penaltiesEnabled: match.penaltiesEnabled || false,
+      homePenaltyScore: match.homePenaltyScore || 0,
+      awayPenaltyScore: match.awayPenaltyScore || 0,
+    }));
+
+  res.json(todayMatches);
+});
+
+/**
+ * @swagger
+ * /api/live/games/{id}/score:
+ *   put:
+ *     summary: Update game score
+ *     description: Updates the score of a specific game
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - homeScore
+ *               - awayScore
+ *             properties:
+ *               homeScore:
+ *                 type: integer
+ *               awayScore:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Score updated
+ *       400:
+ *         description: Invalid data
+ *       401:
+ *         description: Not authenticated
+ *       403:
+ *         description: Not authorized (requires trainer/admin)
+ */
+app.put(
+  "/api/live/games/:id/score",
+  requireRole(["admin", "trainer"]),
+  (req, res) => {
+    const { id } = req.params;
+    const { homeScore, awayScore } = req.body || {};
+
+    if (homeScore === undefined || awayScore === undefined) {
+      return res.status(400).json({ message: "homeScore und awayScore erforderlich." });
+    }
+
+    const matches = readJson(MATCHES_FILE);
+    const match = matches.find((m) => m.id === parseInt(id));
+
+    if (!match) {
+      return res.status(404).json({ message: "Spiel nicht gefunden." });
+    }
+
+    if (!match.result) {
+      match.result = {};
+    }
+
+    match.result.heim = homeScore;
+    match.result.gast = awayScore;
+
+    writeJson(MATCHES_FILE, matches);
+
+    logSecurityEvent("GAME_SCORE_UPDATED", req.user.username, {
+      gameId: id,
+      homeScore,
+      awayScore,
+    });
+
+    return res.json({
+      message: "Spielstand aktualisiert.",
+      match: {
+        id: match.id,
+        homeScore,
+        awayScore,
+        displayScore: `${homeScore}:${awayScore}`,
+      },
+    });
+  }
+);
+
+/**
+ * @swagger
+ * /api/live/games/{id}/status:
+ *   put:
+ *     summary: Update game status
+ *     description: Updates the status of a game (LIVE, HALFTIME, FINISHED, etc.)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [SCHEDULED, LIVE, HALFTIME, EXTRA_TIME, PENALTY_SHOOTOUT, FINISHED]
+ *     responses:
+ *       200:
+ *         description: Status updated
+ *       400:
+ *         description: Invalid status
+ *       403:
+ *         description: Not authorized
+ */
+app.put(
+  "/api/live/games/:id/status",
+  requireRole(["admin", "trainer"]),
+  (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body || {};
+
+    const validStatuses = [
+      "SCHEDULED",
+      "LIVE",
+      "HALFTIME",
+      "EXTRA_TIME",
+      "PENALTY_SHOOTOUT",
+      "FINISHED",
+    ];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Ungültiger Spielstatus." });
+    }
+
+    const matches = readJson(MATCHES_FILE);
+    const match = matches.find((m) => m.id === parseInt(id));
+
+    if (!match) {
+      return res.status(404).json({ message: "Spiel nicht gefunden." });
+    }
+
+    match.status = status;
+    writeJson(MATCHES_FILE, matches);
+
+    logSecurityEvent("GAME_STATUS_UPDATED", req.user.username, {
+      gameId: id,
+      status,
+    });
+
+    return res.json({
+      message: "Spielstatus aktualisiert.",
+      match: {
+        id: match.id,
+        status,
+      },
+    });
+  }
+);
+
+/**
+ * @swagger
+ * /api/live/games/{id}/penalties:
+ *   put:
+ *     summary: Record penalty shootout result
+ *     description: Records a penalty attempt in a penalty shootout
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isHome
+ *               - isGoal
+ *             properties:
+ *               isHome:
+ *                 type: boolean
+ *                 description: true for home team, false for away team
+ *               isGoal:
+ *                 type: boolean
+ *                 description: true for goal, false for miss
+ *     responses:
+ *       200:
+ *         description: Penalty recorded
+ *       400:
+ *         description: Penalties not enabled
+ *       403:
+ *         description: Not authorized
+ */
+app.put(
+  "/api/live/games/:id/penalties",
+  requireRole(["admin", "trainer"]),
+  (req, res) => {
+    const { id } = req.params;
+    const { isHome, isGoal } = req.body || {};
+
+    if (isHome === undefined || isGoal === undefined) {
+      return res.status(400).json({ message: "isHome und isGoal erforderlich." });
+    }
+
+    const matches = readJson(MATCHES_FILE);
+    const match = matches.find((m) => m.id === parseInt(id));
+
+    if (!match) {
+      return res.status(404).json({ message: "Spiel nicht gefunden." });
+    }
+
+    if (!match.penaltiesEnabled) {
+      return res
+        .status(400)
+        .json({ message: "Elfmeterschießen für dieses Spiel nicht aktiviert." });
+    }
+
+    if (!match.penaltySequence) {
+      match.penaltySequence = [];
+    }
+
+    match.penaltySequence.push({
+      team: isHome ? "home" : "away",
+      goal: isGoal,
+      timestamp: new Date().toISOString(),
+    });
+
+    if (isGoal) {
+      if (isHome) {
+        match.homePenaltyScore = (match.homePenaltyScore || 0) + 1;
+      } else {
+        match.awayPenaltyScore = (match.awayPenaltyScore || 0) + 1;
+      }
+    }
+
+    writeJson(MATCHES_FILE, matches);
+
+    logSecurityEvent("PENALTY_RECORDED", req.user.username, {
+      gameId: id,
+      team: isHome ? "home" : "away",
+      isGoal,
+      homePenaltyScore: match.homePenaltyScore || 0,
+      awayPenaltyScore: match.awayPenaltyScore || 0,
+    });
+
+    return res.json({
+      message: "Elfmeter registriert.",
+      match: {
+        id: match.id,
+        penaltiesEnabled: true,
+        homePenaltyScore: match.homePenaltyScore || 0,
+        awayPenaltyScore: match.awayPenaltyScore || 0,
+      },
+    });
+  }
+);
 
 app.use((_req, res) => {
   res.status(404).json({ message: "Route nicht gefunden." });

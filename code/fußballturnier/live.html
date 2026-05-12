@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live - Fußballturnier</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Live Section Styles */
+      .live-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .live-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+
+      .live-header h1 {
+        font-size: 2em;
+        margin: 0;
+        color: #333;
+      }
+
+      .live-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: bold;
+        color: #ff4444;
+        animation: pulse 1s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .live-dot {
+        width: 12px;
+        height: 12px;
+        background-color: #ff4444;
+        border-radius: 50%;
+      }
+
+      .games-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .game-card {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .game-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+      }
+
+      .game-card.live {
+        border-color: #ff4444;
+        background: #fff9f9;
+      }
+
+      .game-card.finished {
+        opacity: 0.7;
+      }
+
+      .game-status {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.9em;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      .status-scheduled {
+        background: #e3f2fd;
+        color: #1976d2;
+      }
+
+      .status-live {
+        background: #ffcdd2;
+        color: #c62828;
+        animation: pulse 1s infinite;
+      }
+
+      .status-halftime {
+        background: #fff3e0;
+        color: #e65100;
+      }
+
+      .status-finished {
+        background: #f0f0f0;
+        color: #666;
+      }
+
+      .game-teams {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 15px 0;
+      }
+
+      .team {
+        flex: 1;
+        text-align: center;
+      }
+
+      .team-name {
+        font-size: 1.1em;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      .score {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #ff4444;
+        min-width: 80px;
+        text-align: center;
+      }
+
+      .game-info {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 15px;
+        border-top: 1px solid #e0e0e0;
+        font-size: 0.9em;
+        color: #666;
+      }
+
+      .minute {
+        font-weight: bold;
+        color: #333;
+      }
+
+      .competition {
+        color: #999;
+      }
+
+      /* Penalty Shootout Styles */
+      .penalty-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e0e0e0;
+      }
+
+      .penalty-title {
+        font-weight: bold;
+        color: #c62828;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        font-size: 0.9em;
+      }
+
+      .penalty-scores {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .penalty-team-score {
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+      }
+
+      .penalty-team-name {
+        font-size: 0.85em;
+        color: #666;
+        margin-bottom: 5px;
+      }
+
+      .penalty-score {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #c62828;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+      }
+
+      .empty-state h2 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+      }
+
+      .spinner {
+        border: 4px solid #f0f0f0;
+        border-top: 4px solid #ff4444;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error-message {
+        background: #ffcdd2;
+        color: #c62828;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        border-left: 4px solid #c62828;
+      }
+
+      @media (max-width: 768px) {
+        .games-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .live-header {
+          flex-direction: column;
+          gap: 15px;
+          text-align: center;
+        }
+
+        .score {
+          font-size: 2em;
+        }
+
+        .game-card {
+          padding: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="nav-brand">Fußballturnier</div>
+        <div class="nav-menu">
+          <a href="index.html" class="nav-link">Home</a>
+          <a href="live.html" class="nav-link active">Live</a>
+          <button id="logoutBtn" class="nav-button" style="display: none;">
+            Logout
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="live-container">
+      <div class="live-header">
+        <h1>Live-Ansicht</h1>
+        <div class="live-indicator" id="liveIndicator" style="display: none;">
+          <div class="live-dot"></div>
+          <span>LIVE</span>
+        </div>
+      </div>
+
+      <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+      <div id="loadingState" class="loading">
+        <div class="spinner"></div>
+        <p>Spiele werden geladen...</p>
+      </div>
+
+      <div id="gamesContainer" class="games-grid" style="display: none;"></div>
+
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <h2>Keine Live-Spiele</h2>
+        <p>Heute sind keine Spiele geplant.</p>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:3000/api";
+      let gamesData = [];
+      let autoRefreshInterval;
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", () => {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          window.location.href = "index.html";
+          return;
+        }
+
+        setupLogout();
+        loadGames();
+
+        // Auto-refresh every 5 seconds
+        autoRefreshInterval = setInterval(loadGames, 5000);
+      });
+
+      function setupLogout() {
+        const logoutBtn = document.getElementById("logoutBtn");
+        const token = localStorage.getItem("token");
+
+        if (token) {
+          logoutBtn.style.display = "block";
+          logoutBtn.addEventListener("click", logout);
+        }
+      }
+
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
+
+      async function loadGames() {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await fetch(`${API_URL}/live/games`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to load games");
+          }
+
+          gamesData = await response.json();
+          renderGames();
+          hideError();
+        } catch (error) {
+          console.error("Error loading games:", error);
+          showError("Fehler beim Laden der Spiele. Versuchen Sie es später erneut.");
+        }
+      }
+
+      function renderGames() {
+        const container = document.getElementById("gamesContainer");
+        const emptyState = document.getElementById("emptyState");
+        const loadingState = document.getElementById("loadingState");
+
+        loadingState.style.display = "none";
+
+        if (gamesData.length === 0) {
+          container.style.display = "none";
+          emptyState.style.display = "block";
+          updateLiveIndicator(false);
+          return;
+        }
+
+        container.innerHTML = gamesData
+          .map((game) => createGameCard(game))
+          .join("");
+        container.style.display = "grid";
+        emptyState.style.display = "none";
+
+        const hasLiveGames = gamesData.some((g) => g.status === "LIVE");
+        updateLiveIndicator(hasLiveGames);
+      }
+
+      function createGameCard(game) {
+        const statusClass = `status-${game.status.toLowerCase()}`;
+        const cardClass = `game-card ${game.status === "LIVE" ? "live" : ""} ${
+          game.status === "FINISHED" ? "finished" : ""
+        }`;
+
+        let penaltySection = "";
+        if (game.penaltiesEnabled) {
+          penaltySection = `
+            <div class="penalty-section">
+              <div class="penalty-title">⚽ Elfmeterschießen</div>
+              <div class="penalty-scores">
+                <div class="penalty-team-score">
+                  <div class="penalty-team-name">${game.homeTeam}</div>
+                  <div class="penalty-score">${game.homePenaltyScore || 0}</div>
+                </div>
+                <div class="penalty-team-score">
+                  <div class="penalty-team-name">${game.awayTeam}</div>
+                  <div class="penalty-score">${game.awayPenaltyScore || 0}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="${cardClass}">
+            <div class="game-status ${statusClass}">
+              ${formatStatus(game.status)}
+            </div>
+
+            <div class="game-teams">
+              <div class="team">
+                <div class="team-name">${game.homeTeam}</div>
+              </div>
+              <div class="score">${game.displayScore}</div>
+              <div class="team">
+                <div class="team-name">${game.awayTeam}</div>
+              </div>
+            </div>
+
+            ${penaltySection}
+
+            <div class="game-info">
+              <span class="minute">
+                ${game.status === "LIVE" ? `${game.currentMinute}'` : ""}
+                ${game.status === "HALFTIME" ? "Halbzeit" : ""}
+                ${game.status === "FINISHED" ? "Beendet" : ""}
+                ${game.status === "PENALTY_SHOOTOUT" ? "Elfmeterschießen" : ""}
+              </span>
+              <span class="competition">${game.competition}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      function formatStatus(status) {
+        const statusMap = {
+          SCHEDULED: "Geplant",
+          LIVE: "🔴 LIVE",
+          HALFTIME: "Halbzeit",
+          EXTRA_TIME: "Verlängerung",
+          PENALTY_SHOOTOUT: "Elfmeterschießen",
+          FINISHED: "Beendet",
+        };
+        return statusMap[status] || status;
+      }
+
+      function updateLiveIndicator(isLive) {
+        const indicator = document.getElementById("liveIndicator");
+        if (isLive) {
+          indicator.style.display = "flex";
+        } else {
+          indicator.style.display = "none";
+        }
+      }
+
+      function showError(message) {
+        const errorDiv = document.getElementById("errorMessage");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+      }
+
+      function hideError() {
+        const errorDiv = document.getElementById("errorMessage");
+        errorDiv.style.display = "none";
+      }
+
+      // Cleanup on page unload
+      window.addEventListener("beforeunload", () => {
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval);
+        }
+      });
+    </script>
+  </body>
+</html>
