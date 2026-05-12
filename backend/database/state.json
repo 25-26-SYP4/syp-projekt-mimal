@@ -75,6 +75,22 @@
   "players": {},
   "notifications": [
     {
+      "id": "e39eb47b-a4fd-451f-b472-2c7114d68a9d",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-05-12T14:41:34.298Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "cae8f6f7-9a9e-4aec-9eff-70d9fce0428a",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-05-12T14:41:12.713Z",
+      "read": false,
+      "key": null
+    },
+    {
       "id": "e6bf9a08-5c07-43ac-a37b-554d5ca85099",
       "text": "Willkommen admin.",
       "type": "success",

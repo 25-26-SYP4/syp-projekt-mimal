@@ -12,9 +12,15 @@ const STORAGE_KEYS = {
   THEME: "ft_theme"
 };
 
-// Automatically detect API base URL from current browser origin
-// Works for localhost:3000, localhost:8000, example.com, or any deployment
-const API_BASE = `${window.location.origin}/api`;
+// Automatically detect API base URL.
+// - When the app runs on the backend host, use the same origin.
+// - For local file/live-server previews, use the backend on port 3000.
+const isBackendOrigin =
+  window.location.protocol === "http:" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
+  window.location.port === "3000";
+
+const API_BASE = isBackendOrigin ? `${window.location.origin}/api` : "http://localhost:3000/api";
 let authToken = localStorage.getItem("ft_auth_token") || "";
 
 const ROLE_LABELS = {
