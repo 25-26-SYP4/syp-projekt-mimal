@@ -10,7 +10,7 @@ const swaggerUi = require("swagger-ui-express");
 
 // Load environment file when present (dev convenience)
 try {
-  require('dotenv').config();
+  require("dotenv").config();
 } catch (_err) {
   // noop if dotenv not installed / no .env
 }
@@ -21,8 +21,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-change-me";
 const API_URL = process.env.API_URL || `http://localhost:${PORT}`;
 
 // In production, ensure a non-default JWT secret is set
-if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'dev-change-me') {
-  console.error('FATAL: JWT_SECRET is not set. Please set JWT_SECRET in the environment.');
+if (process.env.NODE_ENV === "production" && JWT_SECRET === "dev-change-me") {
+  console.error("FATAL: JWT_SECRET is not set. Please set JWT_SECRET in the environment.");
   process.exit(1);
 }
 
@@ -37,7 +37,8 @@ const swaggerOptions = {
     servers: [
       {
         url: API_URL,
-        description: process.env.NODE_ENV === "production" ? "Production server" : "Development server",
+        description:
+          process.env.NODE_ENV === "production" ? "Production server" : "Development server",
       },
     ],
     components: {
@@ -93,7 +94,7 @@ const editableKeys = new Set([
   "notifications",
   "archives",
   "awards",
-  "media"
+  "media",
 ]);
 
 const rolePermissions = {
@@ -104,7 +105,7 @@ const rolePermissions = {
   notifications: ["admin", "trainer", "referee", "viewer"],
   archives: ["admin"],
   awards: ["admin"],
-  media: ["admin", "trainer"]
+  media: ["admin", "trainer"],
 };
 
 function initFiles() {
@@ -115,15 +116,18 @@ function initFiles() {
     fs.writeFileSync(MATCHES_FILE, JSON.stringify([]));
   }
   if (!fs.existsSync(STATE_FILE)) {
-    fs.writeFileSync(STATE_FILE, JSON.stringify({
-      bracket: null,
-      groups: [],
-      players: {},
-      notifications: [],
-      archives: [],
-      awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
-      media: []
-    }));
+    fs.writeFileSync(
+      STATE_FILE,
+      JSON.stringify({
+        bracket: null,
+        groups: [],
+        players: {},
+        notifications: [],
+        archives: [],
+        awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
+        media: [],
+      })
+    );
   }
 }
 
@@ -133,20 +137,50 @@ function seedDefaults() {
 
   const now = new Date().toISOString();
   const defaults = [
-    { id: 1, username: "admin", password_hash: bcrypt.hashSync("admin123", 10), role: "admin", created_at: now },
-    { id: 2, username: "gast", password_hash: bcrypt.hashSync("gast123", 10), role: "viewer", created_at: now },
-    { id: 3, username: "trainer", password_hash: bcrypt.hashSync("trainer123", 10), role: "trainer", created_at: now },
-    { id: 4, username: "schiri", password_hash: bcrypt.hashSync("schiri123", 10), role: "referee", created_at: now },
-    { id: 5, username: "user1", password_hash: bcrypt.hashSync("user123", 10), role: "viewer", created_at: now },
+    {
+      id: 1,
+      username: "admin",
+      password_hash: bcrypt.hashSync("admin123", 10),
+      role: "admin",
+      created_at: now,
+    },
+    {
+      id: 2,
+      username: "gast",
+      password_hash: bcrypt.hashSync("gast123", 10),
+      role: "viewer",
+      created_at: now,
+    },
+    {
+      id: 3,
+      username: "trainer",
+      password_hash: bcrypt.hashSync("trainer123", 10),
+      role: "trainer",
+      created_at: now,
+    },
+    {
+      id: 4,
+      username: "schiri",
+      password_hash: bcrypt.hashSync("schiri123", 10),
+      role: "referee",
+      created_at: now,
+    },
+    {
+      id: 5,
+      username: "user1",
+      password_hash: bcrypt.hashSync("user123", 10),
+      role: "viewer",
+      created_at: now,
+    },
   ];
 
   writeJson(USERS_FILE, defaults);
 }
-  
+
 function readJson(filePath) {
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch (error) {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch (_error) {
     return [];
   }
 }
@@ -166,7 +200,7 @@ function authOptional(req, _res, next) {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     const users = readJson(USERS_FILE);
-    const user = users.find(u => u.id === payload.sub);
+    const user = users.find((u) => u.id === payload.sub);
     req.user = user ? { id: user.id, username: user.username, role: user.role } : null;
   } catch (_error) {
     req.user = null;
@@ -196,15 +230,9 @@ function requireRole(roles) {
 }
 
 function safeUsers() {
-  return readJson(USERS_FILE).map(user => ({ username: user.username, role: user.role })).sort((a, b) => a.username.localeCompare(b.username));
-}
-
-function parseJson(value, fallback) {
-  try {
-    return value ? JSON.parse(value) : fallback;
-  } catch (_error) {
-    return fallback;
-  }
+  return readJson(USERS_FILE)
+    .map((user) => ({ username: user.username, role: user.role }))
+    .sort((a, b) => a.username.localeCompare(b.username));
 }
 
 function cleanUsername(value) {
@@ -242,7 +270,7 @@ function getWholeState() {
     notifications: state.notifications,
     archives: state.archives,
     awards: state.awards,
-    media: state.media
+    media: state.media,
   };
 }
 
@@ -260,13 +288,13 @@ function updateStateKey(key, value) {
 app.use(authOptional);
 
 // Serve frontend static files (if frontend exists in ../code/fußballturnier)
-const FRONTEND_DIR = path.join(__dirname, '..', 'code', 'fußballturnier');
+const FRONTEND_DIR = path.join(__dirname, "..", "code", "fußballturnier");
 if (fs.existsSync(FRONTEND_DIR)) {
   app.use(express.static(FRONTEND_DIR));
 
   // SPA fallback: send index.html for non-API routes
   app.get(/^\/(?!api|api-docs).*/, (_req, res) => {
-    res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+    res.sendFile(path.join(FRONTEND_DIR, "index.html"));
   });
 }
 
@@ -274,40 +302,77 @@ if (fs.existsSync(FRONTEND_DIR)) {
 function resetDatabase() {
   const now = new Date().toISOString();
   const defaults = [
-    { id: 1, username: "admin", password_hash: bcrypt.hashSync("admin123", 10), role: "admin", created_at: now },
-    { id: 2, username: "gast", password_hash: bcrypt.hashSync("gast123", 10), role: "viewer", created_at: now },
-    { id: 3, username: "trainer", password_hash: bcrypt.hashSync("trainer123", 10), role: "trainer", created_at: now },
-    { id: 4, username: "schiri", password_hash: bcrypt.hashSync("schiri123", 10), role: "referee", created_at: now },
-    { id: 5, username: "user1", password_hash: bcrypt.hashSync("user123", 10), role: "viewer", created_at: now },
+    {
+      id: 1,
+      username: "admin",
+      password_hash: bcrypt.hashSync("admin123", 10),
+      role: "admin",
+      created_at: now,
+    },
+    {
+      id: 2,
+      username: "gast",
+      password_hash: bcrypt.hashSync("gast123", 10),
+      role: "viewer",
+      created_at: now,
+    },
+    {
+      id: 3,
+      username: "trainer",
+      password_hash: bcrypt.hashSync("trainer123", 10),
+      role: "trainer",
+      created_at: now,
+    },
+    {
+      id: 4,
+      username: "schiri",
+      password_hash: bcrypt.hashSync("schiri123", 10),
+      role: "referee",
+      created_at: now,
+    },
+    {
+      id: 5,
+      username: "user1",
+      password_hash: bcrypt.hashSync("user123", 10),
+      role: "viewer",
+      created_at: now,
+    },
   ];
 
   writeJson(USERS_FILE, defaults);
   writeJson(MATCHES_FILE, []);
-  writeJson(STATE_FILE, JSON.stringify({
-    bracket: null,
-    groups: [],
-    players: {},
-    notifications: [],
-    archives: [],
-    awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
-    media: []
-  }) ? JSON.parse(JSON.stringify({
-    bracket: null,
-    groups: [],
-    players: {},
-    notifications: [],
-    archives: [],
-    awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
-    media: []
-  })) : {});
+  writeJson(
+    STATE_FILE,
+    JSON.stringify({
+      bracket: null,
+      groups: [],
+      players: {},
+      notifications: [],
+      archives: [],
+      awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
+      media: [],
+    })
+      ? JSON.parse(
+          JSON.stringify({
+            bracket: null,
+            groups: [],
+            players: {},
+            notifications: [],
+            archives: [],
+            awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
+            media: [],
+          })
+        )
+      : {}
+  );
 }
 
 // Expose a simple dev-only reset endpoint (only when not in production)
-if (process.env.NODE_ENV !== 'production') {
-  app.post('/api/dev/reset', (_req, res) => {
+if (process.env.NODE_ENV !== "production") {
+  app.post("/api/dev/reset", (_req, res) => {
     try {
       resetDatabase();
-      return res.json({ ok: true, message: 'Database reset to demo defaults.' });
+      return res.json({ ok: true, message: "Database reset to demo defaults." });
     } catch (err) {
       return res.status(500).json({ ok: false, error: String(err) });
     }
@@ -401,7 +466,7 @@ app.get("/api/bootstrap", (req, res) => {
   res.json({
     currentUser: req.user ? { username: req.user.username, role: req.user.role } : null,
     users: safeUsers(),
-    state: getWholeState()
+    state: getWholeState(),
   });
 });
 
@@ -466,7 +531,7 @@ app.post("/api/auth/login", (req, res) => {
   }
 
   const users = readJson(USERS_FILE);
-  const user = users.find(u => u.username === cleanName);
+  const user = users.find((u) => u.username === cleanName);
 
   if (!user) {
     return res.status(401).json({ message: "Login fehlgeschlagen." });
@@ -478,15 +543,15 @@ app.post("/api/auth/login", (req, res) => {
   }
 
   const token = jwt.sign({ sub: user.id, role: user.role, username: user.username }, JWT_SECRET, {
-    expiresIn: "12h"
+    expiresIn: "12h",
   });
 
   return res.json({
     token,
     user: {
       username: user.username,
-      role: user.role
-    }
+      role: user.role,
+    },
   });
 });
 
@@ -560,7 +625,7 @@ app.post("/api/auth/register", (req, res) => {
   const finalRole = allowedRoles.includes(role) ? role : "viewer";
 
   const users = readJson(USERS_FILE);
-  const exists = users.find(u => u.username.toLowerCase() === cleanName.toLowerCase());
+  const exists = users.find((u) => u.username.toLowerCase() === cleanName.toLowerCase());
 
   if (exists) {
     return res.status(400).json({ message: "Benutzername bereits vergeben." });
@@ -568,14 +633,14 @@ app.post("/api/auth/register", (req, res) => {
 
   const now = new Date().toISOString();
   const hash = bcrypt.hashSync(String(password), 10);
-  const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+  const newId = users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
 
   const newUser = {
     id: newId,
     username: cleanName,
     password_hash: hash,
     role: finalRole,
-    created_at: now
+    created_at: now,
   };
 
   users.push(newUser);
@@ -585,8 +650,8 @@ app.post("/api/auth/register", (req, res) => {
     message: "Registrierung erfolgreich.",
     user: {
       username: cleanName,
-      role: finalRole
-    }
+      role: finalRole,
+    },
   });
 });
 
@@ -642,7 +707,7 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
   }
 
   const users = readJson(USERS_FILE);
-  const exists = users.find(u => u.username.toLowerCase() === cleanName.toLowerCase());
+  const exists = users.find((u) => u.username.toLowerCase() === cleanName.toLowerCase());
 
   if (exists) {
     return res.status(400).json({ message: "Benutzername bereits vergeben." });
@@ -650,14 +715,14 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
 
   const now = new Date().toISOString();
   const hash = bcrypt.hashSync(String(password), 10);
-  const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+  const newId = users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
 
   const newUser = {
     id: newId,
     username: cleanName,
     password_hash: hash,
     role: "admin",
-    created_at: now
+    created_at: now,
   };
 
   users.push(newUser);
@@ -667,8 +732,8 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
     message: "Admin erstellt.",
     user: {
       username: cleanName,
-      role: "admin"
-    }
+      role: "admin",
+    },
   });
 });
 
@@ -782,7 +847,7 @@ app.get("/api/team-points", (req, res) => {
   const matches = readJson(MATCHES_FILE);
   const points = {};
 
-  matches.forEach(match => {
+  matches.forEach((match) => {
     if (match.result) {
       const heim = match.heimTeam;
       const gast = match.gastTeam;

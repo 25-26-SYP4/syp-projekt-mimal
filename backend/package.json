@@ -5,7 +5,12 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +26,11 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "eslint": "^10.3.0",
+    "globals": "^16.5.0",
+    "helmet": "^7.0.0",
+    "husky": "^9.1.7",
     "nodemon": "^3.1.14",
-    "helmet": "^7.0.0"
+    "prettier": "^3.8.3"
   }
 }
