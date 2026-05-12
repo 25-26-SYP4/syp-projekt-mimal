@@ -207,6 +207,29 @@ function parseJson(value, fallback) {
   }
 }
 
+function cleanUsername(value) {
+  return String(value ?? "").trim();
+}
+
+function validateUsername(value) {
+  const username = cleanUsername(value);
+  if (username.length < 3 || username.length > 30) {
+    return "Benutzername muss zwischen 3 und 30 Zeichen lang sein.";
+  }
+  if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+    return "Benutzername darf nur Buchstaben, Zahlen, Punkt, Unterstrich und Bindestrich enthalten.";
+  }
+  return null;
+}
+
+function validatePassword(value) {
+  const password = String(value ?? "");
+  if (password.length < 6 || password.length > 100) {
+    return "Passwort muss zwischen 6 und 100 Zeichen lang sein.";
+  }
+  return null;
+}
+
 function getWholeState() {
   const matches = readJson(MATCHES_FILE);
   const state = readJson(STATE_FILE);
@@ -426,12 +449,24 @@ app.get("/api/bootstrap", (req, res) => {
  */
 app.post("/api/auth/login", (req, res) => {
   const { username, password } = req.body || {};
-  if (!username || !password) {
+  const cleanName = cleanUsername(username);
+
+  if (!cleanName || !password) {
     return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
+  const usernameError = validateUsername(cleanName);
+  if (usernameError) {
+    return res.status(400).json({ message: usernameError });
+  }
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
+  }
+
   const users = readJson(USERS_FILE);
-  const user = users.find(u => u.username === String(username).trim());
+  const user = users.find(u => u.username === cleanName);
 
   if (!user) {
     return res.status(401).json({ message: "Login fehlgeschlagen." });
@@ -505,20 +540,27 @@ app.post("/api/auth/logout", requireAuth, (_req, res) => {
 app.post("/api/auth/register", (req, res) => {
   const { username, password, role } = req.body || {};
 
-  if (!username || !password) {
+  const cleanName = cleanUsername(username);
+
+  if (!cleanName || !password) {
     return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
-  if (String(password).length < 6) {
-    return res.status(400).json({ message: "Passwort muss mindestens 6 Zeichen haben." });
+  const usernameError = validateUsername(cleanName);
+  if (usernameError) {
+    return res.status(400).json({ message: usernameError });
+  }
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
   }
 
   const allowedRoles = ["viewer", "trainer", "referee"];
   const finalRole = allowedRoles.includes(role) ? role : "viewer";
-  const cleanUsername = String(username).trim();
 
   const users = readJson(USERS_FILE);
-  const exists = users.find(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
+  const exists = users.find(u => u.username.toLowerCase() === cleanName.toLowerCase());
 
   if (exists) {
     return res.status(400).json({ message: "Benutzername bereits vergeben." });
@@ -530,7 +572,7 @@ app.post("/api/auth/register", (req, res) => {
 
   const newUser = {
     id: newId,
-    username: cleanUsername,
+    username: cleanName,
     password_hash: hash,
     role: finalRole,
     created_at: now
@@ -542,7 +584,7 @@ app.post("/api/auth/register", (req, res) => {
   return res.status(201).json({
     message: "Registrierung erfolgreich.",
     user: {
-      username: cleanUsername,
+      username: cleanName,
       role: finalRole
     }
   });
@@ -583,17 +625,24 @@ app.post("/api/auth/register", (req, res) => {
 app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
   const { username, password } = req.body || {};
 
-  if (!username || !password) {
+  const cleanName = cleanUsername(username);
+
+  if (!cleanName || !password) {
     return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
-  if (String(password).length < 6) {
-    return res.status(400).json({ message: "Passwort muss mindestens 6 Zeichen haben." });
+  const usernameError = validateUsername(cleanName);
+  if (usernameError) {
+    return res.status(400).json({ message: usernameError });
   }
 
-  const cleanUsername = String(username).trim();
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
+  }
+
   const users = readJson(USERS_FILE);
-  const exists = users.find(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
+  const exists = users.find(u => u.username.toLowerCase() === cleanName.toLowerCase());
 
   if (exists) {
     return res.status(400).json({ message: "Benutzername bereits vergeben." });
@@ -605,7 +654,7 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
 
   const newUser = {
     id: newId,
-    username: cleanUsername,
+    username: cleanName,
     password_hash: hash,
     role: "admin",
     created_at: now
@@ -617,7 +666,7 @@ app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
   return res.status(201).json({
     message: "Admin erstellt.",
     user: {
-      username: cleanUsername,
+      username: cleanName,
       role: "admin"
     }
   });
