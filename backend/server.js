@@ -7,10 +7,23 @@ const bcrypt = require("bcryptjs");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 
+// Load environment file when present (dev convenience)
+try {
+  require('dotenv').config();
+} catch (_err) {
+  // noop if dotenv not installed / no .env
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "dev-change-me";
 const API_URL = process.env.API_URL || `http://localhost:${PORT}`;
+
+// In production, ensure a non-default JWT secret is set
+if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'dev-change-me') {
+  console.error('FATAL: JWT_SECRET is not set. Please set JWT_SECRET in the environment.');
+  process.exit(1);
+}
 
 const swaggerOptions = {
   definition: {
@@ -214,6 +227,50 @@ function updateStateKey(key, value) {
 }
 
 app.use(authOptional);
+
+// Dev-only helpers
+function resetDatabase() {
+  const now = new Date().toISOString();
+  const defaults = [
+    { id: 1, username: "admin", password_hash: bcrypt.hashSync("admin123", 10), role: "admin", created_at: now },
+    { id: 2, username: "gast", password_hash: bcrypt.hashSync("gast123", 10), role: "viewer", created_at: now },
+    { id: 3, username: "trainer", password_hash: bcrypt.hashSync("trainer123", 10), role: "trainer", created_at: now },
+    { id: 4, username: "schiri", password_hash: bcrypt.hashSync("schiri123", 10), role: "referee", created_at: now },
+    { id: 5, username: "user1", password_hash: bcrypt.hashSync("user123", 10), role: "viewer", created_at: now },
+  ];
+
+  writeJson(USERS_FILE, defaults);
+  writeJson(MATCHES_FILE, []);
+  writeJson(STATE_FILE, JSON.stringify({
+    bracket: null,
+    groups: [],
+    players: {},
+    notifications: [],
+    archives: [],
+    awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
+    media: []
+  }) ? JSON.parse(JSON.stringify({
+    bracket: null,
+    groups: [],
+    players: {},
+    notifications: [],
+    archives: [],
+    awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
+    media: []
+  })) : {});
+}
+
+// Expose a simple dev-only reset endpoint (only when not in production)
+if (process.env.NODE_ENV !== 'production') {
+  app.post('/api/dev/reset', (_req, res) => {
+    try {
+      resetDatabase();
+      return res.json({ ok: true, message: 'Database reset to demo defaults.' });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: String(err) });
+    }
+  });
+}
 
 /**
  * @swagger
