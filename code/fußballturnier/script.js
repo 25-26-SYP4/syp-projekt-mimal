@@ -38,7 +38,7 @@ const FLOW_STEPS = [
   {
     id: "matches",
     title: "Spiele planen",
-    hint: "Lege mindestens 2 Spiele an, damit Teams in allen Modulen verfuegbar sind."
+    hint: "Lege mindestens 2 Spiele an, damit Teams in allen Modulen verfügbar sind."
   },
   {
     id: "structure",
@@ -362,7 +362,7 @@ async function handleCreateAdmin(event) {
   clearMessages();
 
   if (!isAdmin()) {
-    setMessage(el.adminMsg, "Nur Admins duerfen neue Admins erstellen.", "error");
+    setMessage(el.adminMsg, "Nur Admins dürfen neue Admins erstellen.", "error");
     return;
   }
 
@@ -403,7 +403,7 @@ function handleSaveMatch(event) {
   clearMessages();
 
   if (!canManageMatches()) {
-    setMessage(el.matchMessage, "Nur Admins oder Trainer duerfen Spiele speichern.", "error");
+    setMessage(el.matchMessage, "Nur Admins oder Trainer dürfen Spiele speichern.", "error");
     return;
   }
 
@@ -496,7 +496,7 @@ function startEditMatch(id) {
   el.fields.spielPlatz.value = match.platz;
   el.fields.spielSchiri.value = match.schiri;
 
-  el.saveMatchBtn.textContent = "Aenderungen speichern";
+  el.saveMatchBtn.textContent = "Änderungen speichern";
   el.cancelEditBtn.classList.remove("hidden");
 }
 
@@ -637,7 +637,7 @@ function refreshSeedInputFromMatches(onlyIfEmpty) {
 
 function handleGenerateBracket() {
   if (!canGenerateStructure()) {
-    setMessage(el.bracketInfo, "Nur Admins oder Trainer duerfen den K.-o.-Baum generieren.", "error");
+    setMessage(el.bracketInfo, "Nur Admins oder Trainer dürfen den K.-o.-Baum generieren.", "error");
     return;
   }
 
@@ -645,7 +645,7 @@ function handleGenerateBracket() {
   const teams = parseTeamsFromInput(el.teamSeedInput.value);
 
   if (teams.length < 2) {
-    setMessage(el.bracketInfo, "Mindestens 2 Teams fuer einen Turnierbaum eintragen.", "error");
+    setMessage(el.bracketInfo, "Mindestens 2 Teams für einen Turnierbaum eintragen.", "error");
     return;
   }
 
@@ -678,7 +678,7 @@ function handleBracketBoardClick(event) {
 
 function saveBracketResult(roundIndex, matchIndex) {
   if (!canEnterResults()) {
-    setMessage(el.bracketInfo, "Nur Admins oder Schiris duerfen Ergebnisse eintragen.", "error");
+    setMessage(el.bracketInfo, "Nur Admins oder Schiris dürfen Ergebnisse eintragen.", "error");
     return;
   }
 
@@ -1033,7 +1033,7 @@ function newMatch(home, away) {
 function loadGroupTeamsFromMatches() {
   const teams = getUniqueTeams();
   if (!teams.length) {
-    setMessage(el.groupMessage, "Keine Teams aus Spielen verfuegbar.", "error");
+    setMessage(el.groupMessage, "Keine Teams aus Spielen verfügbar.", "error");
     return;
   }
   el.groupTeamsInput.value = teams.join("\n");
@@ -1053,7 +1053,7 @@ function refreshGroupInputFromMatches(onlyIfEmpty) {
 
 function handleGenerateGroups() {
   if (!canGenerateStructure()) {
-    setMessage(el.groupMessage, "Nur Admins oder Trainer duerfen Gruppen erstellen.", "error");
+    setMessage(el.groupMessage, "Nur Admins oder Trainer dürfen Gruppen erstellen.", "error");
     return;
   }
 
@@ -1061,7 +1061,7 @@ function handleGenerateGroups() {
   const groupSize = Number(el.groupSizeInput.value);
 
   if (teams.length < 4) {
-    setMessage(el.groupMessage, "Mindestens 4 Teams fuer Gruppenphase benoetigt.", "error");
+    setMessage(el.groupMessage, "Mindestens 4 Teams für Gruppenphase benötigt.", "error");
     return;
   }
 
@@ -1172,7 +1172,7 @@ function handleGroupBoardInput(event) {
 
 function transferGroupsToKo() {
   if (!canGenerateStructure()) {
-    setMessage(el.groupMessage, "Nur Admins oder Trainer duerfen Teams in den K.-o.-Baum uebernehmen.", "error");
+    setMessage(el.groupMessage, "Nur Admins oder Trainer dürfen Teams in den K.-o.-Baum übernehmen.", "error");
     return;
   }
 
@@ -1202,7 +1202,7 @@ function transferGroupsToKo() {
   });
 
   if (qualifiers.length < 2) {
-    setMessage(el.groupMessage, "Zu wenig Qualifikanten fuer K.-o.-Baum.", "error");
+    setMessage(el.groupMessage, "Zu wenig Qualifikanten für K.-o.-Baum.", "error");
     return;
   }
 
@@ -1216,7 +1216,7 @@ function transferGroupsToKo() {
 
 function handleAddPlayer() {
   if (!canManagePlayers()) {
-    setMessage(el.playerMessage, "Nur Admins oder Trainer duerfen Spieler verwalten.", "error");
+    setMessage(el.playerMessage, "Nur Admins oder Trainer dürfen Spieler verwalten.", "error");
     return;
   }
 
@@ -1224,7 +1224,7 @@ function handleAddPlayer() {
   const playerName = el.playerNameInput.value.trim();
 
   if (!team) {
-    setMessage(el.playerMessage, "Bitte zuerst ein Team waehlen.", "error");
+    setMessage(el.playerMessage, "Bitte zuerst ein Team wählen.", "error");
     return;
   }
 
@@ -1281,7 +1281,7 @@ function refreshPlayerTeams() {
 
   const emptyOption = document.createElement("option");
   emptyOption.value = "";
-  emptyOption.textContent = teams.length ? "Bitte Team waehlen" : "Keine Teams vorhanden";
+  emptyOption.textContent = teams.length ? "Bitte Team wählen" : "Keine Teams vorhanden";
   el.playerTeamSelect.appendChild(emptyOption);
 
   teams.forEach((team) => {
@@ -1314,7 +1314,7 @@ function renderPlayers() {
   if (!roster.length) {
     const li = document.createElement("li");
     li.className = "empty-state";
-    li.textContent = "Noch keine Spieler fuer dieses Team.";
+    li.textContent = "Noch keine Spieler für dieses Team.";
     el.playerList.appendChild(li);
     return;
   }
@@ -1422,7 +1422,7 @@ function checkUpcomingMatchNotifications() {
 
 function archiveCurrentTournament() {
   if (!canArchive()) {
-    setMessage(el.archiveMessage, "Nur Admins duerfen ein Turnier archivieren.", "error");
+    setMessage(el.archiveMessage, "Nur Admins dürfen ein Turnier archivieren.", "error");
     return;
   }
 
@@ -1501,12 +1501,12 @@ function renderLiveCenter() {
 
   renderLiveScoreboardPanel(liveContext);
   renderLiveBucket("Live jetzt", liveContext.buckets.live);
-  renderLiveBucket("Als naechstes", liveContext.buckets.upcoming.slice(0, 6));
+  renderLiveBucket("Als nächstes", liveContext.buckets.upcoming.slice(0, 6));
   renderLiveBucket("Bereits gespielt", liveContext.buckets.done.slice(0, 6));
 
   setMessage(
     el.liveMessage,
-    `Live: ${liveContext.buckets.live.length} | Demnaechst: ${liveContext.buckets.upcoming.length} | Gespielt: ${liveContext.buckets.done.length} | Resultate: ${liveContext.scoredMatches.length}`,
+    `Live: ${liveContext.buckets.live.length} | Demnächst: ${liveContext.buckets.upcoming.length} | Gespielt: ${liveContext.buckets.done.length} | Resultate: ${liveContext.scoredMatches.length}`,
     "success"
   );
 }
@@ -1592,8 +1592,8 @@ function renderLiveScoreboardPanel(liveContext) {
   const subtitle = document.createElement("p");
   subtitle.className = "live-scoreboard-subtitle";
   subtitle.textContent = liveContext.featured
-    ? "Aktuelle Spiele, letzte Resultate und naechste Anpfiffe in einem Blick."
-    : "Noch keine passenden Spiele fuer das Scoreboard vorhanden.";
+    ? "Aktuelle Spiele, letzte Resultate und nächste Anpfiffe in einem Blick."
+    : "Noch keine passenden Spiele für das Scoreboard vorhanden.";
   titleWrap.appendChild(subtitle);
 
   const status = document.createElement("span");

@@ -31,12 +31,12 @@
       <article class="quick-step">
         <p class="step-number">Schritt 1</p>
         <h3>Einloggen oder registrieren</h3>
-        <p>Waehle eine Rolle und melde dich an. Admin ist fuer komplette Turnierleitung gedacht.</p>
+        <p>Wähle eine Rolle und melde dich an. Admin ist für komplette Turnierleitung gedacht.</p>
       </article>
       <article class="quick-step">
         <p class="step-number">Schritt 2</p>
         <h3>Spielplan anlegen</h3>
-        <p>Erstelle Spiele mit Datum, Uhrzeit und Platz. Teams werden automatisch fuer weitere Bereiche vorgeschlagen.</p>
+        <p>Erstelle Spiele mit Datum, Uhrzeit und Platz. Teams werden automatisch für weitere Bereiche vorgeschlagen.</p>
       </article>
       <article class="quick-step">
         <p class="step-number">Schritt 3</p>
@@ -50,13 +50,13 @@
         <h2>Flow Coach</h2>
         <p id="flowProgressLabel" class="flow-progress-label">Fortschritt: 0%</p>
       </div>
-      <p class="section-intro">Folge diesem Ablauf. Der naechste sinnvolle Schritt wird automatisch empfohlen.</p>
+      <p class="section-intro">Folge diesem Ablauf. Der nächste sinnvolle Schritt wird automatisch empfohlen.</p>
       <div class="flow-progress-track" aria-hidden="true">
         <div id="flowProgressBar" class="flow-progress-bar"></div>
       </div>
       <ol id="flowSteps" class="flow-steps"></ol>
       <div class="actions">
-        <button type="button" id="flowPrimaryBtn">Naechster Schritt</button>
+        <button type="button" id="flowPrimaryBtn">Nächster Schritt</button>
         <button type="button" id="flowSecondaryBtn" class="secondary">Zum empfohlenen Bereich</button>
       </div>
       <p id="flowHint" class="message"></p>
@@ -100,7 +100,7 @@
 
       <article class="card">
         <h2>Registrieren</h2>
-        <p class="section-intro">Erstelle schnell einen neuen Zugang fuer Trainer, Schiri oder Zuschauer.</p>
+        <p class="section-intro">Erstelle schnell einen neuen Zugang für Trainer, Schiri oder Zuschauer.</p>
         <form id="registerForm" class="form-grid" autocomplete="on">
           <label for="registerUsername">Benutzername</label>
           <input id="registerUsername" name="username" type="text" placeholder="Neuer Benutzername" required />
@@ -114,7 +114,7 @@
             <option value="trainer">Trainer</option>
             <option value="referee">Schiri</option>
           </select>
-          <p class="input-hint full-width">Hinweis: Admin-Konten koennen nur im Dashboard von bestehenden Admins erstellt werden.</p>
+          <p class="input-hint full-width">Hinweis: Admin-Konten können nur im Dashboard von bestehenden Admins erstellt werden.</p>
 
           <div class="actions full-width">
             <button type="submit">Account erstellen</button>
@@ -126,7 +126,7 @@
 
     <section class="card hidden" id="dashboardSection" data-view="dashboard">
       <h2>Dashboard</h2>
-      <p class="section-intro">Der zentrale Status fuer dein Turnier in Echtzeit.</p>
+      <p class="section-intro">Der zentrale Status für dein Turnier in Echtzeit.</p>
       <div class="stats-grid">
         <div class="stat-tile">
           <p class="stat-label">Gesamtspiele</p>
@@ -166,7 +166,7 @@
         <input id="spielSchiri" type="text" placeholder="z. B. M. Berger" required />
 
         <datalist id="teamSuggestions"></datalist>
-        <p class="input-hint full-width">Tipp: Datum und Uhrzeit werden automatisch vorausgefuellt und koennen jederzeit angepasst werden.</p>
+        <p class="input-hint full-width">Tipp: Datum und Uhrzeit werden automatisch vorausgefüllt und können jederzeit angepasst werden.</p>
 
         <div class="actions full-width">
           <button type="submit" id="saveMatchBtn">Spiel speichern</button>
@@ -197,8 +197,8 @@
       <p class="section-intro">Hier steuerst du Turnierlogik, Kader, Awards, Benachrichtigungen und Archiv.</p>
 
       <article class="panel-block">
-        <h3>Gruppenphase und K.-o.-Uebergang</h3>
-        <p class="panel-note">Lege Gruppen an, trage Punkte ein und uebernimm die besten Teams direkt in den K.-o.-Baum.</p>
+        <h3>Gruppenphase und K.-o.-Übergang</h3>
+        <p class="panel-note">Lege Gruppen an, trage Punkte ein und übernimm die besten Teams direkt in den K.-o.-Baum.</p>
         <div class="form-grid compact">
           <label for="groupSizeInput">Teams pro Gruppe</label>
           <input id="groupSizeInput" type="number" min="2" max="8" value="4" />
@@ -217,7 +217,7 @@
 
       <article class="panel-block">
         <h3>Spielerverwaltung</h3>
-        <p class="panel-note">Jedes Team kann einen eigenen Kader erhalten. Perfekt fuer MVP- und Award-Auswahl.</p>
+        <p class="panel-note">Jedes Team kann einen eigenen Kader erhalten. Perfekt für MVP- und Award-Auswahl.</p>
         <div class="form-grid compact">
           <label for="playerTeamSelect">Team</label>
           <select id="playerTeamSelect"></select>
@@ -226,7 +226,7 @@
           <input id="playerNameInput" type="text" placeholder="Max Mustermann" />
         </div>
         <div class="actions">
-          <button type="button" id="addPlayerBtn">Spieler hinzufuegen</button>
+          <button type="button" id="addPlayerBtn">Spieler hinzufügen</button>
         </div>
         <p id="playerMessage" class="message"></p>
         <ul id="playerList" class="simple-list"></ul>
@@ -253,7 +253,7 @@
 
       <article class="panel-block">
         <h3>Awards und MVP</h3>
-        <p class="panel-note">Dokumentiere Auszeichnungen fuer die Siegerehrung und Public-Kommunikation.</p>
+        <p class="panel-note">Dokumentiere Auszeichnungen für die Siegerehrung und Public-Kommunikation.</p>
         <div class="form-grid compact">
           <label for="awardMvpInput">MVP</label>
           <input id="awardMvpInput" type="text" placeholder="Name" />
@@ -273,7 +273,7 @@
 
       <article class="panel-block">
         <h3>Mediathek</h3>
-        <p class="panel-note">Lade Turnierbilder hoch und praesentiere Highlights in Galerieform.</p>
+        <p class="panel-note">Lade Turnierbilder hoch und präsentiere Highlights in Galerieform.</p>
         <div class="form-grid compact">
           <label for="mediaTitleInput">Titel</label>
           <input id="mediaTitleInput" type="text" placeholder="z. B. Siegerfoto" />

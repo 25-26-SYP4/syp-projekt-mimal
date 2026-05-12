@@ -75,6 +75,14 @@
   "players": {},
   "notifications": [
     {
+      "id": "e20241a4-9de2-4f24-94bb-d4fdae65fc78",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-05-12T09:05:40.729Z",
+      "read": false,
+      "key": null
+    },
+    {
       "id": "819aa204-6472-4837-b76d-b6e5eae1de16",
       "text": "Ergebnis aktualisiert in Runde 1, Match 2.",
       "type": "success",
