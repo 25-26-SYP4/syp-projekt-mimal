@@ -10,6 +10,7 @@ const swaggerUi = require("swagger-ui-express");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "dev-change-me";
+const API_URL = process.env.API_URL || `http://localhost:${PORT}`;
 
 const swaggerOptions = {
   definition: {
@@ -21,8 +22,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`,
-        description: "Development server",
+        url: API_URL,
+        description: process.env.NODE_ENV === "production" ? "Production server" : "Development server",
       },
     ],
     components: {

@@ -12,7 +12,9 @@ const STORAGE_KEYS = {
   THEME: "ft_theme"
 };
 
-const API_BASE = "http://localhost:3000/api";
+// Automatically detect API base URL from current browser origin
+// Works for localhost:3000, localhost:8000, example.com, or any deployment
+const API_BASE = `${window.location.origin}/api`;
 let authToken = localStorage.getItem("ft_auth_token") || "";
 
 const ROLE_LABELS = {
