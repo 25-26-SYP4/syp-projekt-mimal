@@ -1,33 +1,30 @@
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const path = require("path");
-const Database = require("better-sqlite3");
+const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 
+// Load environment file when present (dev convenience)
+try {
+  require("dotenv").config();
+} catch (_err) {
+  // noop if dotenv not installed / no .env
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || "dev-change-me";
+const API_URL = process.env.API_URL || `http://localhost:${PORT}`;
 
-// JWT Security
-if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
-  console.error("FEHLER: JWT_SECRET nicht gesetzt!");
+// In production, ensure a non-default JWT secret is set
+if (process.env.NODE_ENV === "production" && JWT_SECRET === "dev-change-me") {
+  console.error("FATAL: JWT_SECRET is not set. Please set JWT_SECRET in the environment.");
   process.exit(1);
 }
-const JWT_SECRET = process.env.JWT_SECRET || "dev-insecure-change-in-production";
-const JWT_EXPIRY = process.env.JWT_EXPIRY || "12h";
-
-// Rate Limiting
-const loginAttempts = new Map();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000;
-const RATE_LIMIT_MAX_ATTEMPTS = 5;
-
-// SQLite Database Setup
-const DB_PATH = path.join(__dirname, "database", "tournament.db");
-const db = new Database(DB_PATH);
-db.pragma("journal_mode = WAL");
 
 const swaggerOptions = {
   definition: {
@@ -39,8 +36,9 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`,
-        description: "Development server",
+        url: API_URL,
+        description:
+          process.env.NODE_ENV === "production" ? "Production server" : "Development server",
       },
     ],
     components: {
@@ -63,13 +61,29 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
+const DATA_DIR = path.join(__dirname, "database");
+const USERS_FILE = path.join(DATA_DIR, "users.json");
+const MATCHES_FILE = path.join(DATA_DIR, "matches.json");
+const STATE_FILE = path.join(DATA_DIR, "state.json");
+
 app.use(cors());
 app.use(express.json({ limit: "8mb" }));
+
+// Security headers
+try {
+  app.use(helmet());
+} catch (_e) {
+  // helmet may not be installed in some dev setups
+}
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-initializeDatabase();
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+initFiles();
 seedDefaults();
 
 const editableKeys = new Set([
@@ -80,7 +94,7 @@ const editableKeys = new Set([
   "notifications",
   "archives",
   "awards",
-  "media"
+  "media",
 ]);
 
 const rolePermissions = {
@@ -91,100 +105,88 @@ const rolePermissions = {
   notifications: ["admin", "trainer", "referee", "viewer"],
   archives: ["admin"],
   awards: ["admin"],
-  media: ["admin", "trainer"]
+  media: ["admin", "trainer"],
 };
 
-function initializeDatabase() {
-  try {
-    // Create users table
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        role TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      )
-    `);
-
-    // Create state table
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS state (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      )
-    `);
-
-    console.log("✓ Datenbank initialisiert");
-  } catch (error) {
-    console.error("Datenbankfehler:", error);
-    process.exit(1);
+function initFiles() {
+  if (!fs.existsSync(USERS_FILE)) {
+    fs.writeFileSync(USERS_FILE, JSON.stringify([]));
+  }
+  if (!fs.existsSync(MATCHES_FILE)) {
+    fs.writeFileSync(MATCHES_FILE, JSON.stringify([]));
+  }
+  if (!fs.existsSync(STATE_FILE)) {
+    fs.writeFileSync(
+      STATE_FILE,
+      JSON.stringify({
+        bracket: null,
+        groups: [],
+        players: {},
+        notifications: [],
+        archives: [],
+        awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
+        media: [],
+      })
+    );
   }
 }
 
 function seedDefaults() {
+  const users = readJson(USERS_FILE);
+  if (users.length > 0) return;
+
+  const now = new Date().toISOString();
+  const defaults = [
+    {
+      id: 1,
+      username: "admin",
+      password_hash: bcrypt.hashSync("admin123", 10),
+      role: "admin",
+      created_at: now,
+    },
+    {
+      id: 2,
+      username: "gast",
+      password_hash: bcrypt.hashSync("gast123", 10),
+      role: "viewer",
+      created_at: now,
+    },
+    {
+      id: 3,
+      username: "trainer",
+      password_hash: bcrypt.hashSync("trainer123", 10),
+      role: "trainer",
+      created_at: now,
+    },
+    {
+      id: 4,
+      username: "schiri",
+      password_hash: bcrypt.hashSync("schiri123", 10),
+      role: "referee",
+      created_at: now,
+    },
+    {
+      id: 5,
+      username: "user1",
+      password_hash: bcrypt.hashSync("user123", 10),
+      role: "viewer",
+      created_at: now,
+    },
+  ];
+
+  writeJson(USERS_FILE, defaults);
+}
+
+function readJson(filePath) {
   try {
-    const userCount = db.prepare("SELECT COUNT(*) as count FROM users").get();
-    if (userCount.count > 0) return;
-
-    const now = new Date().toISOString();
-    const defaults = [
-      { username: "admin", password_hash: bcrypt.hashSync("admin123", 10), role: "admin", created_at: now },
-      { username: "gast", password_hash: bcrypt.hashSync("gast123", 10), role: "viewer", created_at: now },
-      { username: "trainer", password_hash: bcrypt.hashSync("trainer123", 10), role: "trainer", created_at: now },
-      { username: "schiri", password_hash: bcrypt.hashSync("schiri123", 10), role: "referee", created_at: now }
-    ];
-
-    const insert = db.prepare("INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)");
-    const insertMany = db.transaction((users) => {
-      for (const user of users) {
-        insert.run(user.username, user.password_hash, user.role, user.created_at);
-      }
-    });
-
-    insertMany(defaults);
-
-    // Initialize default state
-    const initState = {
-      matches: [],
-      bracket: null,
-      groups: [],
-      players: {},
-      notifications: [],
-      archives: [],
-      awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
-      media: []
-    };
-
-    const stateInsert = db.prepare("INSERT OR REPLACE INTO state (key, value) VALUES (?, ?)");
-    for (const [key, value] of Object.entries(initState)) {
-      stateInsert.run(key, JSON.stringify(value));
-    }
-
-    console.log("✓ Standardbenutzer und State initialisiert");
-  } catch (error) {
-    console.error("Seed-Fehler:", error);
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch (_error) {
+    return [];
   }
 }
 
-function getStateValue(key) {
-  try {
-    const row = db.prepare("SELECT value FROM state WHERE key = ?").get(key);
-    return row ? JSON.parse(row.value) : null;
-  } catch (error) {
-    console.error(`Fehler beim Lesen von State-Key '${key}':`, error);
-    return null;
-  }
-}
-
-function setStateValue(key, value) {
-  try {
-    db.prepare("INSERT OR REPLACE INTO state (key, value) VALUES (?, ?)").run(key, JSON.stringify(value));
-    return true;
-  } catch (error) {
-    console.error(`Fehler beim Speichern von State-Key '${key}':`, error);
-    return false;
-  }
+function writeJson(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
 function authOptional(req, _res, next) {
@@ -197,7 +199,8 @@ function authOptional(req, _res, next) {
   const token = header.slice("Bearer ".length).trim();
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    const user = db.prepare("SELECT id, username, role FROM users WHERE id = ?").get(payload.sub);
+    const users = readJson(USERS_FILE);
+    const user = users.find((u) => u.id === payload.sub);
     req.user = user ? { id: user.id, username: user.username, role: user.role } : null;
   } catch (_error) {
     req.user = null;
@@ -227,79 +230,154 @@ function requireRole(roles) {
 }
 
 function safeUsers() {
-  return db.prepare("SELECT username, role FROM users ORDER BY username").all();
+  return readJson(USERS_FILE)
+    .map((user) => ({ username: user.username, role: user.role }))
+    .sort((a, b) => a.username.localeCompare(b.username));
 }
 
-function parseJson(value, fallback) {
-  try {
-    return value ? JSON.parse(value) : fallback;
-  } catch (_error) {
-    return fallback;
+function cleanUsername(value) {
+  return String(value ?? "").trim();
+}
+
+function validateUsername(value) {
+  const username = cleanUsername(value);
+  if (username.length < 3 || username.length > 30) {
+    return "Benutzername muss zwischen 3 und 30 Zeichen lang sein.";
   }
+  if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+    return "Benutzername darf nur Buchstaben, Zahlen, Punkt, Unterstrich und Bindestrich enthalten.";
+  }
+  return null;
+}
+
+function validatePassword(value) {
+  const password = String(value ?? "");
+  if (password.length < 6 || password.length > 100) {
+    return "Passwort muss zwischen 6 und 100 Zeichen lang sein.";
+  }
+  return null;
 }
 
 function getWholeState() {
-  const matches = getStateValue("matches") || [];
-  const bracket = getStateValue("bracket");
-  const groups = getStateValue("groups") || [];
-  const players = getStateValue("players") || {};
-  const notifications = getStateValue("notifications") || [];
-  const archives = getStateValue("archives") || [];
-  const awards = getStateValue("awards") || { mvp: "", topScorer: "", fairPlayTeam: "" };
-  const media = getStateValue("media") || [];
+  const matches = readJson(MATCHES_FILE);
+  const state = readJson(STATE_FILE);
 
   return {
     matches,
-    bracket,
-    groups,
-    players,
-    notifications,
-    archives,
-    awards,
-    media
+    bracket: state.bracket,
+    groups: state.groups,
+    players: state.players,
+    notifications: state.notifications,
+    archives: state.archives,
+    awards: state.awards,
+    media: state.media,
   };
 }
 
 function updateStateKey(key, value) {
-  setStateValue(key, value);
-}
-
-// Validation Helpers
-function validateUsername(username) {
-  if (!username || typeof username !== "string") return false;
-  const trimmed = String(username).trim();
-  return trimmed.length >= 3 && trimmed.length <= 50;
-}
-
-function validatePassword(password) {
-  if (!password || typeof password !== "string") return false;
-  return String(password).length >= 6 && String(password).length <= 128;
-}
-
-function validateMatchResult(homeScore, awayScore) {
-  const h = Number(homeScore);
-  const a = Number(awayScore);
-  return Number.isInteger(h) && Number.isInteger(a) && h >= 0 && a >= 0 && h < 100 && a < 100;
-}
-
-// Rate Limiting
-function checkRateLimit(identifier) {
-  const now = Date.now();
-  const key = `${identifier}:login`;
-  if (!loginAttempts.has(key)) {
-    loginAttempts.set(key, []);
+  if (key === "matches") {
+    writeJson(MATCHES_FILE, value);
+    return;
   }
-  const attempts = loginAttempts.get(key).filter(time => now - time < RATE_LIMIT_WINDOW);
-  loginAttempts.set(key, attempts);
-  if (attempts.length >= RATE_LIMIT_MAX_ATTEMPTS) {
-    return false;
-  }
-  attempts.push(now);
-  loginAttempts.set(key, attempts);
-  return true;
+
+  const state = readJson(STATE_FILE);
+  state[key] = value;
+  writeJson(STATE_FILE, state);
 }
 
 app.use(authOptional);
+
+// Serve frontend static files (if frontend exists in ../code/fußballturnier)
+const FRONTEND_DIR = path.join(__dirname, "..", "code", "fußballturnier");
+if (fs.existsSync(FRONTEND_DIR)) {
+  app.use(express.static(FRONTEND_DIR));
+
+  // SPA fallback: send index.html for non-API routes
+  app.get(/^\/(?!api|api-docs).*/, (_req, res) => {
+    res.sendFile(path.join(FRONTEND_DIR, "index.html"));
+  });
+}
+
+// Dev-only helpers
+function resetDatabase() {
+  const now = new Date().toISOString();
+  const defaults = [
+    {
+      id: 1,
+      username: "admin",
+      password_hash: bcrypt.hashSync("admin123", 10),
+      role: "admin",
+      created_at: now,
+    },
+    {
+      id: 2,
+      username: "gast",
+      password_hash: bcrypt.hashSync("gast123", 10),
+      role: "viewer",
+      created_at: now,
+    },
+    {
+      id: 3,
+      username: "trainer",
+      password_hash: bcrypt.hashSync("trainer123", 10),
+      role: "trainer",
+      created_at: now,
+    },
+    {
+      id: 4,
+      username: "schiri",
+      password_hash: bcrypt.hashSync("schiri123", 10),
+      role: "referee",
+      created_at: now,
+    },
+    {
+      id: 5,
+      username: "user1",
+      password_hash: bcrypt.hashSync("user123", 10),
+      role: "viewer",
+      created_at: now,
+    },
+  ];
+
+  writeJson(USERS_FILE, defaults);
+  writeJson(MATCHES_FILE, []);
+  writeJson(
+    STATE_FILE,
+    JSON.stringify({
+      bracket: null,
+      groups: [],
+      players: {},
+      notifications: [],
+      archives: [],
+      awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
+      media: [],
+    })
+      ? JSON.parse(
+          JSON.stringify({
+            bracket: null,
+            groups: [],
+            players: {},
+            notifications: [],
+            archives: [],
+            awards: { mvp: "", topScorer: "", fairPlayTeam: "" },
+            media: [],
+          })
+        )
+      : {}
+  );
+}
+
+// Expose a simple dev-only reset endpoint (only when not in production)
+if (process.env.NODE_ENV !== "production") {
+  app.post("/api/dev/reset", (_req, res) => {
+    try {
+      resetDatabase();
+      return res.json({ ok: true, message: "Database reset to demo defaults." });
+    } catch (err) {
+      return res.status(500).json({ ok: false, error: String(err) });
+    }
+  });
+}
 
 /**
  * @swagger
@@ -388,7 +466,7 @@ app.get("/api/bootstrap", (req, res) => {
   res.json({
     currentUser: req.user ? { username: req.user.username, role: req.user.role } : null,
     users: safeUsers(),
-    state: getWholeState()
+    state: getWholeState(),
   });
 });
 
@@ -436,47 +514,45 @@ app.get("/api/bootstrap", (req, res) => {
  */
 app.post("/api/auth/login", (req, res) => {
   const { username, password } = req.body || {};
-  
-  if (!username || !password) {
-    return res.status(400).json({ message: "Benutzername und Passwort erforderlich." });
+  const cleanName = cleanUsername(username);
+
+  if (!cleanName || !password) {
+    return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
-  const cleanUsername = String(username).trim();
-  
-  // Rate Limiting
-  if (!checkRateLimit(cleanUsername)) {
-    return res.status(429).json({ message: "Zu viele Login-Versuche. Bitte später versuchen." });
+  const usernameError = validateUsername(cleanName);
+  if (usernameError) {
+    return res.status(400).json({ message: usernameError });
   }
 
-  try {
-    const user = db.prepare("SELECT id, username, password_hash, role FROM users WHERE username = ?").get(cleanUsername);
-
-    if (!user) {
-      return res.status(401).json({ message: "Login fehlgeschlagen." });
-    }
-
-    const ok = bcrypt.compareSync(String(password), user.password_hash);
-    if (!ok) {
-      return res.status(401).json({ message: "Login fehlgeschlagen." });
-    }
-
-    const token = jwt.sign(
-      { sub: user.id, role: user.role, username: user.username },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRY }
-    );
-
-    return res.json({
-      token,
-      user: {
-        username: user.username,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    console.error("Login-Fehler:", error);
-    return res.status(500).json({ message: "Fehler beim Login." });
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
   }
+
+  const users = readJson(USERS_FILE);
+  const user = users.find((u) => u.username === cleanName);
+
+  if (!user) {
+    return res.status(401).json({ message: "Login fehlgeschlagen." });
+  }
+
+  const ok = bcrypt.compareSync(password, user.password_hash);
+  if (!ok) {
+    return res.status(401).json({ message: "Login fehlgeschlagen." });
+  }
+
+  const token = jwt.sign({ sub: user.id, role: user.role, username: user.username }, JWT_SECRET, {
+    expiresIn: "12h",
+  });
+
+  return res.json({
+    token,
+    user: {
+      username: user.username,
+      role: user.role,
+    },
+  });
 });
 
 /**
@@ -529,39 +605,54 @@ app.post("/api/auth/logout", requireAuth, (_req, res) => {
 app.post("/api/auth/register", (req, res) => {
   const { username, password, role } = req.body || {};
 
-  if (!validateUsername(username)) {
-    return res.status(400).json({ message: "Benutzername ungültig (3-50 Zeichen)." });
+  const cleanName = cleanUsername(username);
+
+  if (!cleanName || !password) {
+    return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
-  if (!validatePassword(password)) {
-    return res.status(400).json({ message: "Passwort ungültig (6-128 Zeichen erforderlich)." });
+  const usernameError = validateUsername(cleanName);
+  if (usernameError) {
+    return res.status(400).json({ message: usernameError });
+  }
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
   }
 
   const allowedRoles = ["viewer", "trainer", "referee"];
   const finalRole = allowedRoles.includes(role) ? role : "viewer";
-  const cleanUsername = String(username).trim();
 
-  try {
-    const hash = bcrypt.hashSync(String(password), 10);
-    const now = new Date().toISOString();
-    
-    db.prepare("INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)")
-      .run(cleanUsername, hash, finalRole, now);
+  const users = readJson(USERS_FILE);
+  const exists = users.find((u) => u.username.toLowerCase() === cleanName.toLowerCase());
 
-    return res.status(201).json({
-      message: "Registrierung erfolgreich.",
-      user: {
-        username: cleanUsername,
-        role: finalRole
-      }
-    });
-  } catch (error) {
-    if (error.message.includes("UNIQUE constraint failed")) {
-      return res.status(400).json({ message: "Benutzername bereits vergeben." });
-    }
-    console.error("Registrierungs-Fehler:", error);
-    return res.status(500).json({ message: "Fehler bei Registrierung." });
+  if (exists) {
+    return res.status(400).json({ message: "Benutzername bereits vergeben." });
   }
+
+  const now = new Date().toISOString();
+  const hash = bcrypt.hashSync(String(password), 10);
+  const newId = users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
+
+  const newUser = {
+    id: newId,
+    username: cleanName,
+    password_hash: hash,
+    role: finalRole,
+    created_at: now,
+  };
+
+  users.push(newUser);
+  writeJson(USERS_FILE, users);
+
+  return res.status(201).json({
+    message: "Registrierung erfolgreich.",
+    user: {
+      username: cleanName,
+      role: finalRole,
+    },
+  });
 });
 
 /**
@@ -599,36 +690,51 @@ app.post("/api/auth/register", (req, res) => {
 app.post("/api/auth/admin", requireRole(["admin"]), (req, res) => {
   const { username, password } = req.body || {};
 
-  if (!username || !password) {
+  const cleanName = cleanUsername(username);
+
+  if (!cleanName || !password) {
     return res.status(400).json({ message: "Benutzername und Passwort sind erforderlich." });
   }
 
-  if (String(password).length < 6) {
-    return res.status(400).json({ message: "Passwort muss mindestens 6 Zeichen haben." });
+  const usernameError = validateUsername(cleanName);
+  if (usernameError) {
+    return res.status(400).json({ message: usernameError });
   }
 
-  const cleanUsername = String(username).trim();
-
-  try {
-    const hash = bcrypt.hashSync(String(password), 10);
-    const now = new Date().toISOString();
-
-    db.prepare("INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)")
-      .run(cleanUsername, hash, "admin", now);
-
-    return res.status(201).json({
-      message: "Admin erstellt.",
-      user: {
-        username: cleanUsername,
-        role: "admin"
-      }
-    });
-  } catch (error) {
-    if (error.message.includes("UNIQUE constraint failed")) {
-      return res.status(400).json({ message: "Benutzername bereits vergeben." });
-    }
-    return res.status(500).json({ message: "Fehler bei der Admin-Erstellung." });
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({ message: passwordError });
   }
+
+  const users = readJson(USERS_FILE);
+  const exists = users.find((u) => u.username.toLowerCase() === cleanName.toLowerCase());
+
+  if (exists) {
+    return res.status(400).json({ message: "Benutzername bereits vergeben." });
+  }
+
+  const now = new Date().toISOString();
+  const hash = bcrypt.hashSync(String(password), 10);
+  const newId = users.length > 0 ? Math.max(...users.map((u) => u.id)) + 1 : 1;
+
+  const newUser = {
+    id: newId,
+    username: cleanName,
+    password_hash: hash,
+    role: "admin",
+    created_at: now,
+  };
+
+  users.push(newUser);
+  writeJson(USERS_FILE, users);
+
+  return res.status(201).json({
+    message: "Admin erstellt.",
+    user: {
+      username: cleanName,
+      role: "admin",
+    },
+  });
 });
 
 /**
@@ -738,10 +844,10 @@ app.get("/api/users", requireRole(["admin"]), (_req, res) => {
  *                 description: Points for the team
  */
 app.get("/api/team-points", (req, res) => {
-  const matches = getStateValue("matches") || [];
+  const matches = readJson(MATCHES_FILE);
   const points = {};
 
-  matches.forEach(match => {
+  matches.forEach((match) => {
     if (match.result) {
       const heim = match.heimTeam;
       const gast = match.gastTeam;

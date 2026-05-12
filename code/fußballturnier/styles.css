@@ -16,6 +16,7 @@
   --error: #b73b3b;
   --accent: #f4a524;
   --done: #1c9b67;
+  --champion: #f4a524;
 }
 
 body[data-theme="dark"] {
@@ -257,7 +258,7 @@ body[data-theme="dark"] .flow-coach {
   margin: 0;
   font-size: 0.88rem;
   font-weight: 700;
-  color: #114d92;
+  color: var(--primary);
 }
 
 .flow-progress-track {
@@ -309,6 +310,11 @@ body[data-theme="dark"] .flow-coach {
   color: #12385f;
 }
 
+body[data-theme="dark"] .flow-step-index {
+  background: var(--primary);
+  color: #ffffff;
+}
+
 .flow-step-title {
   margin: 0;
   font-weight: 800;
@@ -330,6 +336,11 @@ body[data-theme="dark"] .flow-coach {
 .flow-step.is-active .flow-step-index {
   background: #2f84c9;
   color: #ffffff;
+}
+
+body[data-theme="dark"] .flow-step.is-active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26, 153, 136, 0.25);
 }
 
 .flow-step.is-done {
@@ -364,6 +375,10 @@ body[data-theme="dark"] .flow-coach {
   padding: 0.8rem;
 }
 
+body[data-theme="dark"] .quick-step {
+  background: var(--surface-strong);
+}
+
 .step-number {
   margin: 0;
   font-size: 0.78rem;
@@ -393,6 +408,10 @@ body[data-theme="dark"] .flow-coach {
   backdrop-filter: blur(4px);
 }
 
+body[data-theme="dark"] .app-nav {
+  background: var(--surface);
+}
+
 .nav-btn {
   background: #e7ecef;
   color: #243243;
@@ -414,6 +433,26 @@ body[data-theme="dark"] .flow-coach {
 
 .nav-btn.is-active:hover {
   background: #0e417a;
+}
+
+body[data-theme="dark"] .nav-btn {
+  background: var(--secondary);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+body[data-theme="dark"] .nav-btn:hover {
+  background: var(--secondary-hover);
+}
+
+body[data-theme="dark"] .nav-btn.is-active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+body[data-theme="dark"] .nav-btn.is-active:hover {
+  background: var(--primary-hover);
 }
 
 h2 {
@@ -464,8 +503,12 @@ input {
 
 input:focus {
   outline: none;
-  border-color: #1f8f83;
+  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(31, 143, 131, 0.16);
+}
+
+body[data-theme="dark"] input:focus {
+  box-shadow: 0 0 0 3px rgba(26, 153, 136, 0.25);
 }
 
 select,
@@ -482,8 +525,13 @@ textarea {
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #1f8f83;
+  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(31, 143, 131, 0.16);
+}
+
+body[data-theme="dark"] select:focus,
+body[data-theme="dark"] textarea:focus {
+  box-shadow: 0 0 0 3px rgba(26, 153, 136, 0.25);
 }
 
 .actions {
@@ -506,6 +554,10 @@ button {
   color: #f8fafc;
   background: linear-gradient(135deg, var(--primary), #1a7fa4);
   transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+body[data-theme="dark"] button {
+  color: #ffffff;
 }
 
 button:hover {
@@ -561,6 +613,10 @@ button.mini {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0.85rem;
+}
+
+body[data-theme="dark"] .stat-tile {
+  background: var(--surface-strong);
 }
 
 .stat-label {
@@ -646,6 +702,11 @@ button.mini {
 .notification-item.is-unread {
   border-color: #4d85b7;
   background: rgba(77, 133, 183, 0.1);
+}
+
+body[data-theme="dark"] .notification-item.is-unread {
+  border-color: var(--primary);
+  background: rgba(26, 153, 136, 0.15);
 }
 
 .notification-item.is-read {
@@ -767,8 +828,8 @@ body[data-theme="dark"] .live-row-chip {
 }
 
 body[data-theme="dark"] .live-scoreboard-featured {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border-color: var(--border);
 }
 
 .live-scoreboard-kicker {
@@ -997,6 +1058,10 @@ body[data-theme="dark"] .live-scoreboard-stats li {
   background: #9db2c4;
 }
 
+body[data-theme="dark"] .bracket-round:not(:last-child) .bracket-match::after {
+  background: var(--border);
+}
+
 .team-name {
   margin: 0;
   padding: 0.3rem 0;
@@ -1007,12 +1072,20 @@ body[data-theme="dark"] .live-scoreboard-stats li {
   border-top: 1px solid #dce4ea;
 }
 
+body[data-theme="dark"] .team-name + .team-name {
+  border-top: 1px solid var(--border);
+}
+
 .match-id {
   margin: 0 0 0.35rem;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #5d6d7f;
+}
+
+body[data-theme="dark"] .match-id {
+  color: var(--muted);
 }
 
 .score-row {

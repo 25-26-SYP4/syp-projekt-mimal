@@ -12,7 +12,15 @@ const STORAGE_KEYS = {
   THEME: "ft_theme"
 };
 
-const API_BASE = "http://localhost:3000/api";
+// Automatically detect API base URL.
+// - When the app runs on the backend host, use the same origin.
+// - For local file/live-server previews, use the backend on port 3000.
+const isBackendOrigin =
+  window.location.protocol === "http:" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
+  window.location.port === "3000";
+
+const API_BASE = isBackendOrigin ? `${window.location.origin}/api` : "http://localhost:3000/api";
 let authToken = localStorage.getItem("ft_auth_token") || "";
 
 const ROLE_LABELS = {
@@ -38,7 +46,7 @@ const FLOW_STEPS = [
   {
     id: "matches",
     title: "Spiele planen",
-    hint: "Lege mindestens 2 Spiele an, damit Teams in allen Modulen verfuegbar sind."
+    hint: "Lege mindestens 2 Spiele an, damit Teams in allen Modulen verfügbar sind."
   },
   {
     id: "structure",
@@ -181,6 +189,18 @@ const el = {
   }
 };
 
+// Security: HTML escape function to prevent XSS attacks
+function escapeHtml(text) {
+  if (!text) return "";
+  const map = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  };
+  return String(text).replace(/[&<>"']/g, (char) => map[char]);
+}
 
 init();
 
@@ -362,7 +382,7 @@ async function handleCreateAdmin(event) {
   clearMessages();
 
   if (!isAdmin()) {
-    setMessage(el.adminMsg, "Nur Admins duerfen neue Admins erstellen.", "error");
+    setMessage(el.adminMsg, "Nur Admins dürfen neue Admins erstellen.", "error");
     return;
   }
 
@@ -403,7 +423,7 @@ function handleSaveMatch(event) {
   clearMessages();
 
   if (!canManageMatches()) {
-    setMessage(el.matchMessage, "Nur Admins oder Trainer duerfen Spiele speichern.", "error");
+    setMessage(el.matchMessage, "Nur Admins oder Trainer dürfen Spiele speichern.", "error");
     return;
   }
 
@@ -496,7 +516,7 @@ function startEditMatch(id) {
   el.fields.spielPlatz.value = match.platz;
   el.fields.spielSchiri.value = match.schiri;
 
-  el.saveMatchBtn.textContent = "Aenderungen speichern";
+  el.saveMatchBtn.textContent = "Änderungen speichern";
   el.cancelEditBtn.classList.remove("hidden");
 }
 
@@ -550,10 +570,23 @@ function renderMatches() {
 
     const details = document.createElement("div");
     details.className = "match-details";
-    details.innerHTML = `
-      <p class="match-line"><strong>${match.heimTeam}</strong> vs. <strong>${match.gastTeam}</strong></p>
-      <p class="match-meta">${match.datum} | ${match.uhrzeit} | ${match.platz} | SR: ${match.schiri}</p>
-    `;
+    
+    const matchLine = document.createElement("p");
+    matchLine.className = "match-line";
+    const homeStrong = document.createElement("strong");
+    homeStrong.textContent = match.heimTeam;
+    const vsText = document.createTextNode(" vs. ");
+    const awayStrong = document.createElement("strong");
+    awayStrong.textContent = match.gastTeam;
+    matchLine.appendChild(homeStrong);
+    matchLine.appendChild(vsText);
+    matchLine.appendChild(awayStrong);
+    details.appendChild(matchLine);
+    
+    const matchMeta = document.createElement("p");
+    matchMeta.className = "match-meta";
+    matchMeta.textContent = `${match.datum} | ${match.uhrzeit} | ${match.platz} | SR: ${match.schiri}`;
+    details.appendChild(matchMeta);
 
     li.appendChild(details);
 
@@ -637,7 +670,7 @@ function refreshSeedInputFromMatches(onlyIfEmpty) {
 
 function handleGenerateBracket() {
   if (!canGenerateStructure()) {
-    setMessage(el.bracketInfo, "Nur Admins oder Trainer duerfen den K.-o.-Baum generieren.", "error");
+    setMessage(el.bracketInfo, "Nur Admins oder Trainer dürfen den K.-o.-Baum generieren.", "error");
     return;
   }
 
@@ -645,7 +678,7 @@ function handleGenerateBracket() {
   const teams = parseTeamsFromInput(el.teamSeedInput.value);
 
   if (teams.length < 2) {
-    setMessage(el.bracketInfo, "Mindestens 2 Teams fuer einen Turnierbaum eintragen.", "error");
+    setMessage(el.bracketInfo, "Mindestens 2 Teams für einen Turnierbaum eintragen.", "error");
     return;
   }
 
@@ -678,7 +711,7 @@ function handleBracketBoardClick(event) {
 
 function saveBracketResult(roundIndex, matchIndex) {
   if (!canEnterResults()) {
-    setMessage(el.bracketInfo, "Nur Admins oder Schiris duerfen Ergebnisse eintragen.", "error");
+    setMessage(el.bracketInfo, "Nur Admins oder Schiris dürfen Ergebnisse eintragen.", "error");
     return;
   }
 
@@ -1033,7 +1066,7 @@ function newMatch(home, away) {
 function loadGroupTeamsFromMatches() {
   const teams = getUniqueTeams();
   if (!teams.length) {
-    setMessage(el.groupMessage, "Keine Teams aus Spielen verfuegbar.", "error");
+    setMessage(el.groupMessage, "Keine Teams aus Spielen verfügbar.", "error");
     return;
   }
   el.groupTeamsInput.value = teams.join("\n");
@@ -1053,7 +1086,7 @@ function refreshGroupInputFromMatches(onlyIfEmpty) {
 
 function handleGenerateGroups() {
   if (!canGenerateStructure()) {
-    setMessage(el.groupMessage, "Nur Admins oder Trainer duerfen Gruppen erstellen.", "error");
+    setMessage(el.groupMessage, "Nur Admins oder Trainer dürfen Gruppen erstellen.", "error");
     return;
   }
 
@@ -1061,7 +1094,7 @@ function handleGenerateGroups() {
   const groupSize = Number(el.groupSizeInput.value);
 
   if (teams.length < 4) {
-    setMessage(el.groupMessage, "Mindestens 4 Teams fuer Gruppenphase benoetigt.", "error");
+    setMessage(el.groupMessage, "Mindestens 4 Teams für Gruppenphase benötigt.", "error");
     return;
   }
 
@@ -1117,26 +1150,38 @@ function renderGroups() {
 
     const table = document.createElement("table");
     table.className = "group-table";
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>Team</th>
-          <th>P</th>
-          <th>GF</th>
-          <th>GA</th>
-        </tr>
-      </thead>
-    `;
+    
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    ["Team", "P", "GF", "GA"].forEach((headerText) => {
+      const th = document.createElement("th");
+      th.textContent = headerText;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
 
     const body = document.createElement("tbody");
     group.teams.forEach((team, teamIndex) => {
       const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${team.name}</td>
-        <td><input type="number" min="0" data-group="${groupIndex}" data-team="${teamIndex}" data-field="points" value="${team.points}" /></td>
-        <td><input type="number" min="0" data-group="${groupIndex}" data-team="${teamIndex}" data-field="goalsFor" value="${team.goalsFor}" /></td>
-        <td><input type="number" min="0" data-group="${groupIndex}" data-team="${teamIndex}" data-field="goalsAgainst" value="${team.goalsAgainst}" /></td>
-      `;
+      
+      const tdTeam = document.createElement("td");
+      tdTeam.textContent = team.name;
+      row.appendChild(tdTeam);
+      
+      ["points", "goalsFor", "goalsAgainst"].forEach((field) => {
+        const td = document.createElement("td");
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.dataset.group = groupIndex;
+        input.dataset.team = teamIndex;
+        input.dataset.field = field;
+        input.value = team[field] || "0";
+        td.appendChild(input);
+        row.appendChild(td);
+      });
+      
       body.appendChild(row);
     });
 
@@ -1172,7 +1217,7 @@ function handleGroupBoardInput(event) {
 
 function transferGroupsToKo() {
   if (!canGenerateStructure()) {
-    setMessage(el.groupMessage, "Nur Admins oder Trainer duerfen Teams in den K.-o.-Baum uebernehmen.", "error");
+    setMessage(el.groupMessage, "Nur Admins oder Trainer dürfen Teams in den K.-o.-Baum übernehmen.", "error");
     return;
   }
 
@@ -1202,7 +1247,7 @@ function transferGroupsToKo() {
   });
 
   if (qualifiers.length < 2) {
-    setMessage(el.groupMessage, "Zu wenig Qualifikanten fuer K.-o.-Baum.", "error");
+    setMessage(el.groupMessage, "Zu wenig Qualifikanten für K.-o.-Baum.", "error");
     return;
   }
 
@@ -1216,7 +1261,7 @@ function transferGroupsToKo() {
 
 function handleAddPlayer() {
   if (!canManagePlayers()) {
-    setMessage(el.playerMessage, "Nur Admins oder Trainer duerfen Spieler verwalten.", "error");
+    setMessage(el.playerMessage, "Nur Admins oder Trainer dürfen Spieler verwalten.", "error");
     return;
   }
 
@@ -1224,7 +1269,7 @@ function handleAddPlayer() {
   const playerName = el.playerNameInput.value.trim();
 
   if (!team) {
-    setMessage(el.playerMessage, "Bitte zuerst ein Team waehlen.", "error");
+    setMessage(el.playerMessage, "Bitte zuerst ein Team wählen.", "error");
     return;
   }
 
@@ -1281,7 +1326,7 @@ function refreshPlayerTeams() {
 
   const emptyOption = document.createElement("option");
   emptyOption.value = "";
-  emptyOption.textContent = teams.length ? "Bitte Team waehlen" : "Keine Teams vorhanden";
+  emptyOption.textContent = teams.length ? "Bitte Team wählen" : "Keine Teams vorhanden";
   el.playerTeamSelect.appendChild(emptyOption);
 
   teams.forEach((team) => {
@@ -1314,7 +1359,7 @@ function renderPlayers() {
   if (!roster.length) {
     const li = document.createElement("li");
     li.className = "empty-state";
-    li.textContent = "Noch keine Spieler fuer dieses Team.";
+    li.textContent = "Noch keine Spieler für dieses Team.";
     el.playerList.appendChild(li);
     return;
   }
@@ -1380,10 +1425,15 @@ function renderNotifications() {
     state.notifications.forEach((entry) => {
       const li = document.createElement("li");
       li.className = `list-item-row notification-item ${entry.read ? "is-read" : "is-unread"}`;
-      li.innerHTML = `
-        <span>${entry.text}</span>
-        <small>${formatDate(entry.createdAt)}</small>
-      `;
+      
+      const span = document.createElement("span");
+      span.textContent = entry.text;
+      li.appendChild(span);
+      
+      const small = document.createElement("small");
+      small.textContent = formatDate(entry.createdAt);
+      li.appendChild(small);
+      
       el.notificationList.appendChild(li);
     });
   }
@@ -1422,7 +1472,7 @@ function checkUpcomingMatchNotifications() {
 
 function archiveCurrentTournament() {
   if (!canArchive()) {
-    setMessage(el.archiveMessage, "Nur Admins duerfen ein Turnier archivieren.", "error");
+    setMessage(el.archiveMessage, "Nur Admins dürfen ein Turnier archivieren.", "error");
     return;
   }
 
@@ -1460,9 +1510,7 @@ function renderArchives() {
   state.archives.forEach((entry) => {
     const li = document.createElement("li");
     li.className = "list-item-row";
-    li.innerHTML = `
-      <span>${formatDate(entry.createdAt)} | Champion: ${entry.champion || "offen"} | Spiele: ${entry.totalMatches} | Teams: ${entry.totalTeams}</span>
-    `;
+    li.textContent = `${formatDate(entry.createdAt)} | Champion: ${entry.champion || "offen"} | Spiele: ${entry.totalMatches} | Teams: ${entry.totalTeams}`;
     el.archiveList.appendChild(li);
   });
 }
@@ -1501,12 +1549,12 @@ function renderLiveCenter() {
 
   renderLiveScoreboardPanel(liveContext);
   renderLiveBucket("Live jetzt", liveContext.buckets.live);
-  renderLiveBucket("Als naechstes", liveContext.buckets.upcoming.slice(0, 6));
+  renderLiveBucket("Als nächstes", liveContext.buckets.upcoming.slice(0, 6));
   renderLiveBucket("Bereits gespielt", liveContext.buckets.done.slice(0, 6));
 
   setMessage(
     el.liveMessage,
-    `Live: ${liveContext.buckets.live.length} | Demnaechst: ${liveContext.buckets.upcoming.length} | Gespielt: ${liveContext.buckets.done.length} | Resultate: ${liveContext.scoredMatches.length}`,
+    `Live: ${liveContext.buckets.live.length} | Demnächst: ${liveContext.buckets.upcoming.length} | Gespielt: ${liveContext.buckets.done.length} | Resultate: ${liveContext.scoredMatches.length}`,
     "success"
   );
 }
@@ -1592,8 +1640,8 @@ function renderLiveScoreboardPanel(liveContext) {
   const subtitle = document.createElement("p");
   subtitle.className = "live-scoreboard-subtitle";
   subtitle.textContent = liveContext.featured
-    ? "Aktuelle Spiele, letzte Resultate und naechste Anpfiffe in einem Blick."
-    : "Noch keine passenden Spiele fuer das Scoreboard vorhanden.";
+    ? "Aktuelle Spiele, letzte Resultate und nächste Anpfiffe in einem Blick."
+    : "Noch keine passenden Spiele für das Scoreboard vorhanden.";
   titleWrap.appendChild(subtitle);
 
   const status = document.createElement("span");
@@ -1718,10 +1766,22 @@ function renderLiveBucket(title, matches) {
       const scoreText = formatFixtureScore(match);
       const statusText = match.diffMinutes <= 0 && match.diffMinutes >= -120 ? "LIVE" : match.diffMinutes > 0 ? "Anstehend" : "Beendet";
 
-      li.innerHTML = `
-        <span><strong>${match.heimTeam}</strong> vs <strong>${match.gastTeam}</strong> | ${scoreText} | ${match.datum} ${match.uhrzeit} | ${match.platz}</span>
-        <span class="live-row-chip">${statusText}</span>
-      `;
+      const span1 = document.createElement("span");
+      const homeStrong = document.createElement("strong");
+      homeStrong.textContent = match.heimTeam;
+      span1.appendChild(homeStrong);
+      span1.appendChild(document.createTextNode(` vs `));
+      const awayStrong = document.createElement("strong");
+      awayStrong.textContent = match.gastTeam;
+      span1.appendChild(awayStrong);
+      span1.appendChild(document.createTextNode(` | ${scoreText} | ${match.datum} ${match.uhrzeit} | ${match.platz}`));
+      li.appendChild(span1);
+      
+      const span2 = document.createElement("span");
+      span2.className = "live-row-chip";
+      span2.textContent = statusText;
+      li.appendChild(span2);
+      
       list.appendChild(li);
     });
 
@@ -1858,14 +1918,35 @@ function renderPublicShare() {
 
   const summary = document.createElement("div");
   summary.className = "public-summary";
-  summary.innerHTML = `
-    <p><strong>Champion:</strong> ${getChampionName() || "offen"}</p>
-    <p><strong>Spiele:</strong> ${state.matches.length}</p>
-    <p><strong>Teams:</strong> ${getUniqueTeams().length}</p>
-    <p><strong>MVP:</strong> ${state.awards.mvp || "offen"}</p>
-  `;
-  el.publicBoard.appendChild(summary);
-
+    
+    const p1 = document.createElement("p");
+    const strong1 = document.createElement("strong");
+    strong1.textContent = "Champion:";
+    p1.appendChild(strong1);
+    p1.appendChild(document.createTextNode(" " + (getChampionName() || "offen")));
+    summary.appendChild(p1);
+    
+    const p2 = document.createElement("p");
+    const strong2 = document.createElement("strong");
+    strong2.textContent = "Spiele:";
+    p2.appendChild(strong2);
+    p2.appendChild(document.createTextNode(" " + state.matches.length));
+    summary.appendChild(p2);
+    
+    const p3 = document.createElement("p");
+    const strong3 = document.createElement("strong");
+    strong3.textContent = "Teams:";
+    p3.appendChild(strong3);
+    p3.appendChild(document.createTextNode(" " + getUniqueTeams().length));
+    summary.appendChild(p3);
+    
+    const p4 = document.createElement("p");
+    const strong4 = document.createElement("strong");
+    strong4.textContent = "MVP:";
+    p4.appendChild(strong4);
+    p4.appendChild(document.createTextNode(" " + (state.awards.mvp || "offen")));
+    summary.appendChild(p4);
+    
   if (state.matches.length) {
     const list = document.createElement("ul");
     list.className = "simple-list";

@@ -75,6 +75,38 @@
   "players": {},
   "notifications": [
     {
+      "id": "e39eb47b-a4fd-451f-b472-2c7114d68a9d",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-05-12T14:41:34.298Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "cae8f6f7-9a9e-4aec-9eff-70d9fce0428a",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-05-12T14:41:12.713Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "e6bf9a08-5c07-43ac-a37b-554d5ca85099",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-05-12T10:14:00.363Z",
+      "read": false,
+      "key": null
+    },
+    {
+      "id": "e20241a4-9de2-4f24-94bb-d4fdae65fc78",
+      "text": "Willkommen admin.",
+      "type": "success",
+      "createdAt": "2026-05-12T09:05:40.729Z",
+      "read": false,
+      "key": null
+    },
+    {
       "id": "819aa204-6472-4837-b76d-b6e5eae1de16",
       "text": "Ergebnis aktualisiert in Runde 1, Match 2.",
       "type": "success",
