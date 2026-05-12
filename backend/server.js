@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const path = require("path");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
@@ -66,6 +67,29 @@ const STATE_FILE = path.join(DATA_DIR, "state.json");
 
 app.use(cors());
 app.use(express.json({ limit: "8mb" }));
+
+// Security headers
+try {
+  app.use(helmet());
+} catch (_e) {
+  // helmet may not be installed in some dev setups
+}
+
+// Configure CORS: permissive in development, restrictable in production via ALLOWED_ORIGINS
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : [];
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow non-browser tools (curl, Postman) with no origin
+    if (!origin) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    if (allowedOrigins.length === 0) {
+      console.warn('Production CORS: no ALLOWED_ORIGINS configured, denying cross-origin requests');
+      return callback(null, false);
+    }
+    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    return callback(null, false);
+  }
+}));
 
 // Swagger UI
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
