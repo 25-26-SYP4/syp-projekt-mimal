@@ -1,349 +1,140 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fußballturnier Portal</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schulturnier-Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="bg-layer"></div>
-  <main class="container">
-    <header class="hero">
-      <div>
-        <p class="kicker">Fußballturnier Portal</p>
-        <h1>Planung wie bei großen Plattformen</h1>
-        <p class="hero-text">Einloggen, registrieren, Spiele verwalten und Daten exportieren - in einem klaren Flow.</p>
-        <p id="championBadge" class="champion-badge hidden">Champion: -</p>
+
+  <!-- NAVIGATION -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="nav-icon">⚽</span>
+      <span id="nav-title">Schulturnier</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-btn active" data-view="public" onclick="showView('public')">
+        <span class="nav-icon-sm">🏆</span> Turnier
+      </button>
+      <button class="nav-btn" data-view="admin" onclick="showView('admin')">
+        <span class="nav-icon-sm">⚙️</span> Admin
+      </button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Farbmodus wechseln">🌙</button>
+    </div>
+  </nav>
+
+  <!-- ======================== -->
+  <!-- PUBLIC VIEW              -->
+  <!-- ======================== -->
+  <div id="view-public" class="view active">
+
+    <!-- Hero -->
+    <div class="pub-hero">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="hero-badge">Fußballturnier</div>
+        <h1 id="pub-title">Schulturnier</h1>
+        <p id="pub-meta" class="hero-meta"></p>
+        <p id="pub-desc" class="hero-desc"></p>
       </div>
-      <div class="session-box" id="sessionBox">
-        <p class="session-label">Nicht eingeloggt</p>
-        <p class="session-user" id="sessionUser">Bitte anmelden oder registrieren</p>
-        <button type="button" id="themeToggleBtn" class="secondary hidden">Theme: Hell</button>
-        <button type="button" id="logoutBtn" class="secondary hidden">Logout</button>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="pub-tabs">
+      <button class="pub-tab active" onclick="switchPubTab('standings', this)">📊 Tabelle</button>
+      <button class="pub-tab" onclick="switchPubTab('schedule', this)">📅 Spielplan</button>
+      <button class="pub-tab" onclick="switchPubTab('knockout', this)">🏅 K.o.-Phase</button>
+    </div>
+
+    <div class="container">
+      <div id="pub-section-standings" class="pub-section active">
+        <h2 class="section-title">Gruppenstand</h2>
+        <div id="pub-standings"></div>
       </div>
-    </header>
 
-    <section class="quick-start" id="quickStart">
-      <article class="quick-step">
-        <p class="step-number">Schritt 1</p>
-        <h3>Einloggen oder registrieren</h3>
-        <p>Wähle eine Rolle und melde dich an. Admin ist für komplette Turnierleitung gedacht.</p>
-      </article>
-      <article class="quick-step">
-        <p class="step-number">Schritt 2</p>
-        <h3>Spielplan anlegen</h3>
-        <p>Erstelle Spiele mit Datum, Uhrzeit und Platz. Teams werden automatisch für weitere Bereiche vorgeschlagen.</p>
-      </article>
-      <article class="quick-step">
-        <p class="step-number">Schritt 3</p>
-        <h3>Gruppen und K.-o. starten</h3>
-        <p>Baue zuerst Gruppen oder direkt den Turnierbaum auf, trage Ergebnisse ein und teile die Public-Ansicht.</p>
-      </article>
-    </section>
-
-    <section class="card flow-coach" id="flowCoach">
-      <div class="top-row">
-        <h2>Flow Coach</h2>
-        <p id="flowProgressLabel" class="flow-progress-label">Fortschritt: 0%</p>
+      <div id="pub-section-schedule" class="pub-section">
+        <h2 class="section-title">Spielplan</h2>
+        <div id="pub-schedule"></div>
       </div>
-      <p class="section-intro">Folge diesem Ablauf. Der nächste sinnvolle Schritt wird automatisch empfohlen.</p>
-      <div class="flow-progress-track" aria-hidden="true">
-        <div id="flowProgressBar" class="flow-progress-bar"></div>
+
+      <div id="pub-section-knockout" class="pub-section">
+        <h2 class="section-title">K.o.-Phase</h2>
+        <div id="pub-knockout"></div>
       </div>
-      <ol id="flowSteps" class="flow-steps"></ol>
-      <div class="actions">
-        <button type="button" id="flowPrimaryBtn">Nächster Schritt</button>
-        <button type="button" id="flowSecondaryBtn" class="secondary">Zum empfohlenen Bereich</button>
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- ADMIN VIEW               -->
+  <!-- ======================== -->
+  <div id="view-admin" class="view">
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="login-overlay">
+      <div class="login-card">
+        <div class="login-icon">🔐</div>
+        <h2>Admin-Bereich</h2>
+        <p>PIN eingeben um fortzufahren</p>
+        <div class="pin-input-wrap">
+          <input type="password" id="pin-input" placeholder="PIN" maxlength="10" autocomplete="off">
+        </div>
+        <p id="pin-error" class="error-text"></p>
+        <button class="btn btn-primary btn-lg" onclick="tryLogin()">Anmelden</button>
+        <p class="pin-hint">Standard-PIN: <code>1234</code></p>
       </div>
-      <p id="flowHint" class="message"></p>
-    </section>
+    </div>
 
-    <nav class="app-nav hidden" id="appNav" aria-label="Hauptnavigation">
-      <button type="button" class="nav-btn is-active" data-view="dashboard">Dashboard</button>
-      <button type="button" class="nav-btn" data-view="live">Live</button>
-      <button type="button" class="nav-btn" data-view="organization">Organisation</button>
-      <button type="button" class="nav-btn" data-view="matches">Spiele</button>
-      <button type="button" class="nav-btn" data-view="bracket">Turnierbaum</button>
-      <button type="button" class="nav-btn" data-view="public">Public</button>
-    </nav>
-
-    <section class="card hidden" id="liveSection" data-view="live">
-      <div class="top-row">
-        <h2>Live Scoreboard</h2>
-        <button type="button" id="refreshLiveBtn" class="secondary">Aktualisieren</button>
+    <!-- Admin Content -->
+    <div id="admin-content" class="hidden">
+      <div class="admin-header">
+        <h1>Admin-Bereich</h1>
+        <button class="btn btn-outline btn-sm" onclick="logout()">Abmelden</button>
       </div>
-      <p id="liveMessage" class="message"></p>
-      <div id="liveBoard" class="live-board"></div>
-    </section>
 
-    <section class="grid auth-grid" id="authSection">
-      <article class="card">
-        <h2>Login</h2>
-        <p class="section-intro">Melde dich mit deiner Rolle an, um passende Funktionen freizuschalten.</p>
-        <form id="loginForm" class="form-grid" autocomplete="on">
-          <label for="loginUsername">Benutzername</label>
-          <input id="loginUsername" name="username" type="text" placeholder="z. B. admin oder trainer" required />
+      <!-- Admin Tabs -->
+      <div class="admin-tabs">
+        <button class="tab-btn active" data-tab="teams" onclick="switchTab('teams')">👥 Teams</button>
+        <button class="tab-btn" data-tab="groups" onclick="switchTab('groups')">🗂 Gruppen</button>
+        <button class="tab-btn" data-tab="schedule" onclick="switchTab('schedule')">📅 Spielplan</button>
+        <button class="tab-btn" data-tab="results" onclick="switchTab('results')">⚽ Ergebnisse</button>
+        <button class="tab-btn" data-tab="knockout" onclick="switchTab('knockout')">🏅 K.o.-Phase</button>
+        <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">⚙️ Einstellungen</button>
+      </div>
 
-          <label for="loginPassword">Passwort</label>
-          <input id="loginPassword" name="password" type="password" placeholder="Passwort" required />
-
-          <div class="actions full-width">
-            <button type="submit">Einloggen</button>
+      <div class="container">
+        <div id="tab-teams" class="tab-content active"></div>
+        <div id="tab-groups" class="tab-content"></div>
+        <div id="tab-schedule" class="tab-content"></div>
+        <div id="tab-results" class="tab-content"></div>
+        <div id="tab-knockout" class="tab-content"></div>
+        <div id="tab-settings" class="tab-content">
+          <div class="section-header">
+            <h2>Turnier-Einstellungen</h2>
           </div>
-        </form>
-        <p id="loginMessage" class="message"></p>
-      </article>
-
-      <article class="card">
-        <h2>Registrieren</h2>
-        <p class="section-intro">Erstelle schnell einen neuen Zugang für Trainer, Schiri oder Zuschauer.</p>
-        <form id="registerForm" class="form-grid" autocomplete="on">
-          <label for="registerUsername">Benutzername</label>
-          <input id="registerUsername" name="username" type="text" placeholder="Neuer Benutzername" required />
-
-          <label for="registerPassword">Passwort</label>
-          <input id="registerPassword" name="password" type="password" placeholder="Mind. 6 Zeichen" required />
-
-          <label for="registerRole">Rolle</label>
-          <select id="registerRole" name="role">
-            <option value="viewer">Zuschauer</option>
-            <option value="trainer">Trainer</option>
-            <option value="referee">Schiri</option>
-          </select>
-          <p class="input-hint full-width">Hinweis: Admin-Konten können nur im Dashboard von bestehenden Admins erstellt werden.</p>
-
-          <div class="actions full-width">
-            <button type="submit">Account erstellen</button>
+          <div class="card">
+            <div id="settings-form"></div>
           </div>
-        </form>
-        <p id="registerMessage" class="message"></p>
-      </article>
-    </section>
-
-    <section class="card hidden" id="dashboardSection" data-view="dashboard">
-      <h2>Dashboard</h2>
-      <p class="section-intro">Der zentrale Status für dein Turnier in Echtzeit.</p>
-      <div class="stats-grid">
-        <div class="stat-tile">
-          <p class="stat-label">Gesamtspiele</p>
-          <p id="totalMatches" class="stat-value">0</p>
-        </div>
-        <div class="stat-tile">
-          <p class="stat-label">Nächste Spiele</p>
-          <p id="upcomingMatches" class="stat-value">0</p>
-        </div>
-        <div class="stat-tile">
-          <p class="stat-label">Rolle</p>
-          <p id="roleLabel" class="stat-value">Gast</p>
         </div>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <section class="card hidden" id="adminTools" data-view="dashboard">
-      <h2>Spiel anlegen / bearbeiten</h2>
-      <p class="section-intro">Trage hier neue Begegnungen ein. Felder mit Teamnamen bieten automatische Vorschlaege.</p>
-      <form id="matchForm" class="form-grid" autocomplete="off">
-        <label for="spielDatum">Datum</label>
-        <input id="spielDatum" type="date" required />
+  <!-- ======================== -->
+  <!-- MODAL                    -->
+  <!-- ======================== -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
 
-        <label for="spielUhrzeit">Uhrzeit</label>
-        <input id="spielUhrzeit" type="time" required />
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
 
-        <label for="heimTeam">Heimteam</label>
-        <input id="heimTeam" type="text" list="teamSuggestions" placeholder="z. B. FC Nord" required />
-
-        <label for="gastTeam">Gastteam</label>
-        <input id="gastTeam" type="text" list="teamSuggestions" placeholder="z. B. SV Sued" required />
-
-        <label for="spielPlatz">Platz</label>
-        <input id="spielPlatz" type="text" placeholder="Platz 1" required />
-
-        <label for="spielSchiri">Schiedsrichter</label>
-        <input id="spielSchiri" type="text" placeholder="z. B. M. Berger" required />
-
-        <datalist id="teamSuggestions"></datalist>
-        <p class="input-hint full-width">Tipp: Datum und Uhrzeit werden automatisch vorausgefüllt und können jederzeit angepasst werden.</p>
-
-        <div class="actions full-width">
-          <button type="submit" id="saveMatchBtn">Spiel speichern</button>
-          <button type="button" id="cancelEditBtn" class="secondary hidden">Bearbeiten abbrechen</button>
-        </div>
-      </form>
-      <p id="matchMessage" class="message"></p>
-    </section>
-
-    <section class="card hidden" id="adminCreator" data-view="dashboard">
-      <h2>Admin erstellen</h2>
-      <form id="adminForm" class="form-grid" autocomplete="off">
-        <label for="adminName">Admin Name</label>
-        <input id="adminName" type="text" placeholder="Neuer Admin" required />
-
-        <label for="adminPass">Admin Passwort</label>
-        <input id="adminPass" type="password" placeholder="Mind. 6 Zeichen" required />
-
-        <div class="actions full-width">
-          <button type="submit">Admin erstellen</button>
-        </div>
-      </form>
-      <p id="adminMsg" class="message"></p>
-    </section>
-
-    <section class="card hidden" id="organizationSection" data-view="organization">
-      <h2>Organisation</h2>
-      <p class="section-intro">Hier steuerst du Turnierlogik, Kader, Awards, Benachrichtigungen und Archiv.</p>
-
-      <article class="panel-block">
-        <h3>Gruppenphase und K.-o.-Übergang</h3>
-        <p class="panel-note">Lege Gruppen an, trage Punkte ein und übernimm die besten Teams direkt in den K.-o.-Baum.</p>
-        <div class="form-grid compact">
-          <label for="groupSizeInput">Teams pro Gruppe</label>
-          <input id="groupSizeInput" type="number" min="2" max="8" value="4" />
-
-          <label for="groupTeamsInput">Teams (eine Zeile pro Team)</label>
-          <textarea id="groupTeamsInput" rows="6" placeholder="Team A&#10;Team B&#10;Team C"></textarea>
-        </div>
-        <div class="actions">
-          <button type="button" id="loadGroupTeamsBtn" class="secondary">Aus Spielen laden</button>
-          <button type="button" id="generateGroupsBtn">Gruppen erstellen</button>
-          <button type="button" id="transferToKoBtn" class="secondary">Top 2 je Gruppe in K.-o.</button>
-        </div>
-        <p id="groupMessage" class="message"></p>
-        <div id="groupBoard" class="group-board"></div>
-      </article>
-
-      <article class="panel-block">
-        <h3>Spielerverwaltung</h3>
-        <p class="panel-note">Jedes Team kann einen eigenen Kader erhalten. Perfekt für MVP- und Award-Auswahl.</p>
-        <div class="form-grid compact">
-          <label for="playerTeamSelect">Team</label>
-          <select id="playerTeamSelect"></select>
-
-          <label for="playerNameInput">Spielername</label>
-          <input id="playerNameInput" type="text" placeholder="Max Mustermann" />
-        </div>
-        <div class="actions">
-          <button type="button" id="addPlayerBtn">Spieler hinzufügen</button>
-        </div>
-        <p id="playerMessage" class="message"></p>
-        <ul id="playerList" class="simple-list"></ul>
-      </article>
-
-      <article class="panel-block">
-        <h3>Benachrichtigungen</h3>
-        <p class="panel-note">Wichtige Ereignisse wie Spielplanung, Ergebnisse und Erinnerungen werden hier gesammelt.</p>
-        <div class="actions">
-          <button type="button" id="markNotificationsReadBtn" class="secondary">Alle als gelesen markieren</button>
-        </div>
-        <ul id="notificationList" class="simple-list"></ul>
-      </article>
-
-      <article class="panel-block">
-        <h3>Turnier-Archiv</h3>
-        <p class="panel-note">Speichere den aktuellen Stand als historische Saison- oder Turnieraufnahme.</p>
-        <div class="actions">
-          <button type="button" id="archiveTournamentBtn">Aktuelles Turnier archivieren</button>
-        </div>
-        <p id="archiveMessage" class="message"></p>
-        <ul id="archiveList" class="simple-list"></ul>
-      </article>
-
-      <article class="panel-block">
-        <h3>Awards und MVP</h3>
-        <p class="panel-note">Dokumentiere Auszeichnungen für die Siegerehrung und Public-Kommunikation.</p>
-        <div class="form-grid compact">
-          <label for="awardMvpInput">MVP</label>
-          <input id="awardMvpInput" type="text" placeholder="Name" />
-
-          <label for="awardTopScorerInput">Top-Scorer</label>
-          <input id="awardTopScorerInput" type="text" placeholder="Name" />
-
-          <label for="awardFairPlayInput">Fair-Play-Team</label>
-          <input id="awardFairPlayInput" type="text" placeholder="Teamname" />
-        </div>
-        <div class="actions">
-          <button type="button" id="saveAwardsBtn">Awards speichern</button>
-        </div>
-        <p id="awardsMessage" class="message"></p>
-        <ul id="awardsList" class="simple-list"></ul>
-      </article>
-
-      <article class="panel-block">
-        <h3>Mediathek</h3>
-        <p class="panel-note">Lade Turnierbilder hoch und präsentiere Highlights in Galerieform.</p>
-        <div class="form-grid compact">
-          <label for="mediaTitleInput">Titel</label>
-          <input id="mediaTitleInput" type="text" placeholder="z. B. Siegerfoto" />
-
-          <label for="mediaFileInput">Bild</label>
-          <input id="mediaFileInput" type="file" accept="image/*" />
-        </div>
-        <div class="actions">
-          <button type="button" id="addMediaBtn">Zur Mediathek</button>
-        </div>
-        <p id="mediaMessage" class="message"></p>
-        <div id="mediaGallery" class="media-gallery"></div>
-      </article>
-    </section>
-
-    <section class="card hidden" id="publicSection" data-view="public">
-      <div class="top-row">
-        <h2>Public Share</h2>
-        <div class="actions">
-          <button type="button" id="copyPublicLinkBtn" class="secondary">Link kopieren</button>
-          <button type="button" id="printPublicBtn">Drucken</button>
-        </div>
-      </div>
-      <p class="message" id="publicMessage"></p>
-      <div id="publicBoard" class="public-board"></div>
-    </section>
-
-    <section class="card hidden" id="matchesSection" data-view="matches">
-      <div class="top-row">
-        <h2>Spiele</h2>
-        <div class="inline-actions">
-          <button type="button" class="secondary" id="exportBtn">Export JSON</button>
-        </div>
-      </div>
-
-      <div class="top-row">
-        <input type="text" id="searchInput" class="search" placeholder="Suche: Team, Datum, Platz, Schiri" />
-      </div>
-      <p class="input-hint">Die Suche filtert live nach allen sichtbaren Begriffen.</p>
-
-      <ul id="spiele" class="spiele-liste"></ul>
-    </section>
-
-    <section class="card hidden" id="bracketSection" data-view="bracket">
-      <div class="top-row">
-        <h2>Turnierbaum</h2>
-        <p class="bracket-subtitle">Automatisch aus den vorhandenen Teams erzeugt</p>
-      </div>
-      <div class="bracket-controls" id="bracketControls">
-        <div class="form-grid compact">
-          <label for="drawMode">Auslosung</label>
-          <select id="drawMode">
-            <option value="seeded">Setzliste (Reihenfolge bleibt)</option>
-            <option value="random">Zufallsauslosung</option>
-          </select>
-
-          <label for="teamSeedInput">Teams (eine Zeile pro Team)</label>
-          <textarea id="teamSeedInput" rows="6" placeholder="Team A&#10;Team B&#10;Team C"></textarea>
-        </div>
-        <div class="actions">
-          <button type="button" id="loadTeamsBtn" class="secondary">Teams aus Spielen laden</button>
-          <button type="button" id="generateBracketBtn">K.-o.-Baum generieren</button>
-        </div>
-      </div>
-      <p class="input-hint">Bei Gleichstand im regulären Ergebnis kannst du direkt Elfmeterschiessen eintragen.</p>
-      <p id="bracketInfo" class="message"></p>
-      <div id="bracketBoard" class="bracket-board"></div>
-    </section>
-  </main>
-  <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
-  <script src="script.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
