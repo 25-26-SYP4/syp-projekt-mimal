@@ -600,3 +600,291 @@ function computeStandings(groupId) {
     );
 }
 
+// =====================
+//  K.O.-PHASE (ADMIN)
+// =====================
+
+// Rundenreihenfolge und Weiterkommen
+const KO_ROUND_ORDER   = ['Viertelfinale', 'Halbfinale', 'Kleines Finale', 'Finale'];
+const KO_NEXT_ROUND    = { 'Viertelfinale': 'Halbfinale', 'Halbfinale': 'Finale' };
+
+function renderKnockoutAdmin() {
+  const c        = document.getElementById('tab-knockout');
+  const koAll    = data.matches.filter(m => m.phase !== 'group');
+  const byRound  = buildByRound(koAll);
+
+  // Welche Runde ist aktuell aktiv (letzte mit Spielen)?
+  const activeRound = getActiveRound(byRound);
+  // Kann die nächste Runde generiert werden?
+  const nextReady   = activeRound && canGenerateNext(activeRound, byRound);
+
+  // ---- Generierungs-Panel ----
+  let groupStandingInfo = '';
+  if (data.groups.length > 0) {
+    groupStandingInfo = data.groups.map(g => {
+      const s = computeStandings(g.id);
+      if (s.length === 0) return `<span class="muted">${escHtml(g.name)}: keine Ergebnisse</span>`;
+      const top = s.slice(0, 3).map((r, i) => {
+        const t = data.teams.find(x => x.id === r.teamId);
+        return `<span class="player-tag">${i+1}. ${t ? escHtml(t.name) : '?'} (${r.pkt} Pkt)</span>`;
+      }).join('');
+      return `<div style="margin-bottom:6px"><span class="group-badge" style="margin-right:6px">${escHtml(g.name)}</span>${top}</div>`;
+    }).join('');
+  }
+
+  let html = `
+    <div class="section-header"><h2>K.o.-Phase</h2></div>
+
+    <div class="card">
+      <h3>⚡ Automatisch generieren</h3>
+      <p class="muted" style="margin-bottom:12px">
+        Die Paarungen werden automatisch aus den Gruppenständen berechnet.
+        Beste Gruppensieger spielen gegen schwächere Zweitplatzierte (Kreuzpaarung).
+      </p>
+
+      ${groupStandingInfo ? `<div style="margin-bottom:14px">${groupStandingInfo}</div>` : ''}
+
+      <div class="form-group" style="max-width:320px">
+        <label>Teams pro Gruppe, die weiterkommen</label>
+        <select id="ko-tpg">
+          <option value="1">1 – Nur Gruppensieger</option>
+          <option value="2" selected>2 – Top 2 jeder Gruppe</option>
+          <option value="3">3 – Top 3 jeder Gruppe</option>
+          <option value="4">4 – Alle 4 (bei 4er-Gruppen)</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" onclick="doGenerateKnockout()">⚽ K.o.-Phase generieren</button>
+        ${nextReady
+          ? `<button class="btn btn-outline" onclick="advanceToNextRound('${activeRound}')">
+               ➡️ ${KO_NEXT_ROUND[activeRound] || ''} generieren
+               ${activeRound === 'Halbfinale' ? '+ Kleines Finale' : ''}
+             </button>`
+          : ''
+        }
+        ${koAll.length > 0
+          ? `<button class="btn btn-danger" onclick="clearKnockout()">🗑️ K.o.-Phase löschen</button>`
+          : ''
+        }
+      </div>
+    </div>
+  `;
+
+  // ---- Bestehende KO-Spiele anzeigen ----
+  KO_ROUND_ORDER.forEach(round => {
+    const rMatches = byRound[round];
+    if (!rMatches || rMatches.length === 0) return;
+    const allPlayed = rMatches.every(m => m.played);
+
+    html += `
+      <div class="card">
+        <div class="card-header-row">
+          <h3>${round}</h3>
+          ${allPlayed ? '<span class="badge badge-green">✓ Abgeschlossen</span>' : '<span class="badge badge-gray">Läuft</span>'}
+        </div>
+        <div class="ko-matches">
+    `;
+
+    rMatches.forEach(m => {
+      const home    = data.teams.find(t => t.id === m.homeId);
+      const away    = data.teams.find(t => t.id === m.awayId);
+      const isF     = round === 'Finale';
+      const homeWon = m.played && m.homeScore > m.awayScore;
+      const awayWon = m.played && m.awayScore > m.homeScore;
+      html += `
+        <div class="ko-match-card ${isF ? 'finale-card' : ''}">
+          <div class="ko-teams">
+            <span class="${homeWon ? 'ko-winner' : ''}">${home ? escHtml(home.name) : '?'}</span>
+            <span class="ko-score">${m.played ? `${m.homeScore} : ${m.awayScore}` : 'vs'}</span>
+            <span class="${awayWon ? 'ko-winner' : ''}">${away ? escHtml(away.name) : '?'}</span>
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="deleteKoMatch('${m.id}')">🗑️</button>
+        </div>
+      `;
+    });
+
+    html += '</div></div>';
+  });
+
+  if (koAll.length === 0) {
+    html += '<p class="empty-state">Noch keine K.o.-Spiele. Gruppenphase zuerst abschließen, dann generieren.</p>';
+  }
+
+  c.innerHTML = html;
+}
+
+// Hilfsfunktionen
+function buildByRound(matches) {
+  const byRound = {};
+  matches.forEach(m => {
+    if (!byRound[m.round]) byRound[m.round] = [];
+    byRound[m.round].push(m);
+  });
+  return byRound;
+}
+
+function getActiveRound(byRound) {
+  // Letzte Runde mit Spielen (in Reihenfolge)
+  let active = null;
+  KO_ROUND_ORDER.forEach(r => { if (byRound[r] && byRound[r].length > 0) active = r; });
+  return active;
+}
+
+function canGenerateNext(round, byRound) {
+  const rMatches = byRound[round] || [];
+  if (rMatches.length === 0) return false;
+  if (!rMatches.every(m => m.played)) return false;       // Runde muss fertig sein
+  const next = KO_NEXT_ROUND[round];
+  if (!next) return false;                                 // Keine Folgerunde (Finale ist Ende)
+  if (byRound[next] && byRound[next].length > 0) return false; // Folgerunde schon da
+  return true;
+}
+
+// ---- Erste Runde aus Gruppenständen generieren ----
+function doGenerateKnockout() {
+  const tpg = parseInt(document.getElementById('ko-tpg').value);
+
+  // Qualifizierte Teams sammeln: alle Gruppen, jeweils top N
+  const qualified = [];
+  data.groups.forEach((g, gi) => {
+    const standings = computeStandings(g.id);
+    for (let pos = 0; pos < tpg && pos < standings.length; pos++) {
+      qualified.push({ teamId: standings[pos].teamId, pos, gi, pkt: standings[pos].pkt, diff: standings[pos].diff });
+    }
+  });
+
+  if (qualified.length < 2) {
+    alert('Zu wenig qualifizierte Teams! Mindestens 2 nötig. Sind Gruppenspiele eingetragen?');
+    return;
+  }
+
+  if (data.matches.some(m => m.phase !== 'group')) {
+    if (!confirm(`K.o.-Phase neu generieren? Alle bestehenden K.o.-Spiele werden gelöscht.`)) return;
+  }
+
+  // Setzen: zuerst alle Gruppensieger (nach Punkten sortiert), dann Zweite, dann Dritte…
+  const byPos = {};
+  qualified.forEach(q => {
+    if (!byPos[q.pos]) byPos[q.pos] = [];
+    byPos[q.pos].push(q);
+  });
+  Object.values(byPos).forEach(arr => arr.sort((a, b) => b.pkt - a.pkt || b.diff - a.diff));
+
+  // Seeds: 1. alle Ersten, 2. alle Zweiten, ...
+  const seeds = [];
+  [0, 1, 2, 3].forEach(pos => { if (byPos[pos]) seeds.push(...byPos[pos]); });
+
+  const n = seeds.length;
+  // Runde bestimmen
+  let roundName;
+  if (n <= 2)       roundName = 'Finale';
+  else if (n <= 4)  roundName = 'Halbfinale';
+  else              roundName = 'Viertelfinale';
+
+  // Alle alten KO-Matches löschen
+  data.matches = data.matches.filter(m => m.phase === 'group');
+
+  // Kreuzpaarung: Seed 1 vs Seed N, Seed 2 vs Seed N-1, ...
+  const matchCount = Math.floor(n / 2);
+  for (let i = 0; i < matchCount; i++) {
+    data.matches.push({
+      id: genId(), groupId: null, phase: 'knockout', round: roundName,
+      homeId: seeds[i].teamId,
+      awayId: seeds[n - 1 - i].teamId,
+      date: '', time: '', field: '',
+      homeScore: null, awayScore: null,
+      penaltyHome: null, penaltyAway: null, played: false
+    });
+  }
+
+  saveData();
+  renderKnockoutAdmin();
+  showToast(`✅ ${matchCount} Spiele im ${roundName} generiert!`);
+}
+
+// ---- Sieger/Verlierer eines KO-Spiels ermitteln (inkl. Elfmeter) ----
+function getKoWinner(m) {
+  if (!m.played) return null;
+  if (m.homeScore > m.awayScore) return m.homeId;
+  if (m.awayScore > m.homeScore) return m.awayId;
+  // Unentschieden → Elfmeter
+  if (m.penaltyHome !== null && m.penaltyAway !== null && m.penaltyHome !== m.penaltyAway) {
+    return m.penaltyHome > m.penaltyAway ? m.homeId : m.awayId;
+  }
+  return null; // noch kein Sieger (Elfmeter fehlt oder ebenfalls gleich)
+}
+
+function getKoLoser(m) {
+  const winner = getKoWinner(m);
+  if (!winner) return null;
+  return winner === m.homeId ? m.awayId : m.homeId;
+}
+
+// ---- Nächste Runde aus Ergebnissen der aktuellen generieren ----
+function advanceToNextRound(currentRound) {
+  const koAll    = data.matches.filter(m => m.phase !== 'group');
+  const rMatches = koAll.filter(m => m.round === currentRound);
+
+  // Alle Spiele müssen gespielt sein UND einen eindeutigen Sieger haben
+  const missingWinner = rMatches.filter(m => !getKoWinner(m));
+  if (missingWinner.length > 0) {
+    const drawCount = rMatches.filter(m => m.played && m.homeScore === m.awayScore).length;
+    if (drawCount > 0) {
+      alert(`${drawCount} Spiel(e) enden unentschieden – bitte zuerst das Elfmeterschießen eintragen!`);
+    } else {
+      alert('Bitte zuerst alle Ergebnisse der aktuellen Runde eintragen!');
+    }
+    return;
+  }
+
+  const nextRound = KO_NEXT_ROUND[currentRound];
+
+  if (nextRound) {
+    const winners = rMatches.map(m => getKoWinner(m));
+    const n = winners.length;
+    for (let i = 0; i < Math.floor(n / 2); i++) {
+      data.matches.push({
+        id: genId(), groupId: null, phase: 'knockout', round: nextRound,
+        homeId: winners[i], awayId: winners[n - 1 - i],
+        date: '', time: '', field: '',
+        homeScore: null, awayScore: null,
+        penaltyHome: null, penaltyAway: null, played: false
+      });
+    }
+  }
+
+  // Halbfinale → Kleines Finale aus Verlierern
+  if (currentRound === 'Halbfinale' && rMatches.length >= 2) {
+    const losers = rMatches.map(m => getKoLoser(m));
+    data.matches.push({
+      id: genId(), groupId: null, phase: 'knockout', round: 'Kleines Finale',
+      homeId: losers[0], awayId: losers[1],
+      date: '', time: '', field: '',
+      homeScore: null, awayScore: null,
+      penaltyHome: null, penaltyAway: null, played: false
+    });
+  }
+
+  saveData();
+  renderKnockoutAdmin();
+  const msg = currentRound === 'Halbfinale'
+    ? '✅ Finale + Kleines Finale generiert!'
+    : `✅ ${nextRound} generiert!`;
+  showToast(msg);
+}
+
+function clearKnockout() {
+  if (!confirm('Alle K.o.-Spiele löschen?')) return;
+  data.matches = data.matches.filter(m => m.phase === 'group');
+  saveData();
+  renderKnockoutAdmin();
+  showToast('🗑️ K.o.-Phase zurückgesetzt.');
+}
+
+function deleteKoMatch(id) {
+  if (!confirm('Spiel löschen?')) return;
+  data.matches = data.matches.filter(m => m.id !== id);
+  saveData();
+  renderKnockoutAdmin();
+}
