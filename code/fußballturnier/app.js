@@ -605,34 +605,34 @@ function computeStandings(groupId) {
 // =====================
 
 // Rundenreihenfolge und Weiterkommen
-const KO_ROUND_ORDER   = ['Viertelfinale', 'Halbfinale', 'Kleines Finale', 'Finale'];
-const KO_NEXT_ROUND    = { 'Viertelfinale': 'Halbfinale', 'Halbfinale': 'Finale' };
+const KO_ROUND_ORDER = ['Viertelfinale', 'Halbfinale', 'Kleines Finale', 'Finale'];
+const KO_NEXT_ROUND = { 'Viertelfinale': 'Halbfinale', 'Halbfinale': 'Finale' };
 
 function renderKnockoutAdmin() {
-  const c        = document.getElementById('tab-knockout');
-  const koAll    = data.matches.filter(m => m.phase !== 'group');
-  const byRound  = buildByRound(koAll);
+    const c = document.getElementById('tab-knockout');
+    const koAll = data.matches.filter(m => m.phase !== 'group');
+    const byRound = buildByRound(koAll);
 
-  // Welche Runde ist aktuell aktiv (letzte mit Spielen)?
-  const activeRound = getActiveRound(byRound);
-  // Kann die nächste Runde generiert werden?
-  const nextReady   = activeRound && canGenerateNext(activeRound, byRound);
+    // Welche Runde ist aktuell aktiv (letzte mit Spielen)?
+    const activeRound = getActiveRound(byRound);
+    // Kann die nächste Runde generiert werden?
+    const nextReady = activeRound && canGenerateNext(activeRound, byRound);
 
-  // ---- Generierungs-Panel ----
-  let groupStandingInfo = '';
-  if (data.groups.length > 0) {
-    groupStandingInfo = data.groups.map(g => {
-      const s = computeStandings(g.id);
-      if (s.length === 0) return `<span class="muted">${escHtml(g.name)}: keine Ergebnisse</span>`;
-      const top = s.slice(0, 3).map((r, i) => {
-        const t = data.teams.find(x => x.id === r.teamId);
-        return `<span class="player-tag">${i+1}. ${t ? escHtml(t.name) : '?'} (${r.pkt} Pkt)</span>`;
-      }).join('');
-      return `<div style="margin-bottom:6px"><span class="group-badge" style="margin-right:6px">${escHtml(g.name)}</span>${top}</div>`;
-    }).join('');
-  }
+    // ---- Generierungs-Panel ----
+    let groupStandingInfo = '';
+    if (data.groups.length > 0) {
+        groupStandingInfo = data.groups.map(g => {
+            const s = computeStandings(g.id);
+            if (s.length === 0) return `<span class="muted">${escHtml(g.name)}: keine Ergebnisse</span>`;
+            const top = s.slice(0, 3).map((r, i) => {
+                const t = data.teams.find(x => x.id === r.teamId);
+                return `<span class="player-tag">${i + 1}. ${t ? escHtml(t.name) : '?'} (${r.pkt} Pkt)</span>`;
+            }).join('');
+            return `<div style="margin-bottom:6px"><span class="group-badge" style="margin-right:6px">${escHtml(g.name)}</span>${top}</div>`;
+        }).join('');
+    }
 
-  let html = `
+    let html = `
     <div class="section-header"><h2>K.o.-Phase</h2></div>
 
     <div class="card">
@@ -657,27 +657,27 @@ function renderKnockoutAdmin() {
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn btn-primary" onclick="doGenerateKnockout()">⚽ K.o.-Phase generieren</button>
         ${nextReady
-          ? `<button class="btn btn-outline" onclick="advanceToNextRound('${activeRound}')">
+            ? `<button class="btn btn-outline" onclick="advanceToNextRound('${activeRound}')">
                ➡️ ${KO_NEXT_ROUND[activeRound] || ''} generieren
                ${activeRound === 'Halbfinale' ? '+ Kleines Finale' : ''}
              </button>`
-          : ''
+            : ''
         }
         ${koAll.length > 0
-          ? `<button class="btn btn-danger" onclick="clearKnockout()">🗑️ K.o.-Phase löschen</button>`
-          : ''
+            ? `<button class="btn btn-danger" onclick="clearKnockout()">🗑️ K.o.-Phase löschen</button>`
+            : ''
         }
       </div>
     </div>
   `;
 
-  // ---- Bestehende KO-Spiele anzeigen ----
-  KO_ROUND_ORDER.forEach(round => {
-    const rMatches = byRound[round];
-    if (!rMatches || rMatches.length === 0) return;
-    const allPlayed = rMatches.every(m => m.played);
+    // ---- Bestehende KO-Spiele anzeigen ----
+    KO_ROUND_ORDER.forEach(round => {
+        const rMatches = byRound[round];
+        if (!rMatches || rMatches.length === 0) return;
+        const allPlayed = rMatches.every(m => m.played);
 
-    html += `
+        html += `
       <div class="card">
         <div class="card-header-row">
           <h3>${round}</h3>
@@ -686,13 +686,13 @@ function renderKnockoutAdmin() {
         <div class="ko-matches">
     `;
 
-    rMatches.forEach(m => {
-      const home    = data.teams.find(t => t.id === m.homeId);
-      const away    = data.teams.find(t => t.id === m.awayId);
-      const isF     = round === 'Finale';
-      const homeWon = m.played && m.homeScore > m.awayScore;
-      const awayWon = m.played && m.awayScore > m.homeScore;
-      html += `
+        rMatches.forEach(m => {
+            const home = data.teams.find(t => t.id === m.homeId);
+            const away = data.teams.find(t => t.id === m.awayId);
+            const isF = round === 'Finale';
+            const homeWon = m.played && m.homeScore > m.awayScore;
+            const awayWon = m.played && m.awayScore > m.homeScore;
+            html += `
         <div class="ko-match-card ${isF ? 'finale-card' : ''}">
           <div class="ko-teams">
             <span class="${homeWon ? 'ko-winner' : ''}">${home ? escHtml(home.name) : '?'}</span>
@@ -702,189 +702,391 @@ function renderKnockoutAdmin() {
           <button class="btn btn-sm btn-danger" onclick="deleteKoMatch('${m.id}')">🗑️</button>
         </div>
       `;
+        });
+
+        html += '</div></div>';
     });
 
-    html += '</div></div>';
-  });
+    if (koAll.length === 0) {
+        html += '<p class="empty-state">Noch keine K.o.-Spiele. Gruppenphase zuerst abschließen, dann generieren.</p>';
+    }
 
-  if (koAll.length === 0) {
-    html += '<p class="empty-state">Noch keine K.o.-Spiele. Gruppenphase zuerst abschließen, dann generieren.</p>';
-  }
-
-  c.innerHTML = html;
+    c.innerHTML = html;
 }
 
 // Hilfsfunktionen
 function buildByRound(matches) {
-  const byRound = {};
-  matches.forEach(m => {
-    if (!byRound[m.round]) byRound[m.round] = [];
-    byRound[m.round].push(m);
-  });
-  return byRound;
+    const byRound = {};
+    matches.forEach(m => {
+        if (!byRound[m.round]) byRound[m.round] = [];
+        byRound[m.round].push(m);
+    });
+    return byRound;
 }
 
 function getActiveRound(byRound) {
-  // Letzte Runde mit Spielen (in Reihenfolge)
-  let active = null;
-  KO_ROUND_ORDER.forEach(r => { if (byRound[r] && byRound[r].length > 0) active = r; });
-  return active;
+    // Letzte Runde mit Spielen (in Reihenfolge)
+    let active = null;
+    KO_ROUND_ORDER.forEach(r => { if (byRound[r] && byRound[r].length > 0) active = r; });
+    return active;
 }
 
 function canGenerateNext(round, byRound) {
-  const rMatches = byRound[round] || [];
-  if (rMatches.length === 0) return false;
-  if (!rMatches.every(m => m.played)) return false;       // Runde muss fertig sein
-  const next = KO_NEXT_ROUND[round];
-  if (!next) return false;                                 // Keine Folgerunde (Finale ist Ende)
-  if (byRound[next] && byRound[next].length > 0) return false; // Folgerunde schon da
-  return true;
+    const rMatches = byRound[round] || [];
+    if (rMatches.length === 0) return false;
+    if (!rMatches.every(m => m.played)) return false;       // Runde muss fertig sein
+    const next = KO_NEXT_ROUND[round];
+    if (!next) return false;                                 // Keine Folgerunde (Finale ist Ende)
+    if (byRound[next] && byRound[next].length > 0) return false; // Folgerunde schon da
+    return true;
 }
 
 // ---- Erste Runde aus Gruppenständen generieren ----
 function doGenerateKnockout() {
-  const tpg = parseInt(document.getElementById('ko-tpg').value);
+    const tpg = parseInt(document.getElementById('ko-tpg').value);
 
-  // Qualifizierte Teams sammeln: alle Gruppen, jeweils top N
-  const qualified = [];
-  data.groups.forEach((g, gi) => {
-    const standings = computeStandings(g.id);
-    for (let pos = 0; pos < tpg && pos < standings.length; pos++) {
-      qualified.push({ teamId: standings[pos].teamId, pos, gi, pkt: standings[pos].pkt, diff: standings[pos].diff });
-    }
-  });
-
-  if (qualified.length < 2) {
-    alert('Zu wenig qualifizierte Teams! Mindestens 2 nötig. Sind Gruppenspiele eingetragen?');
-    return;
-  }
-
-  if (data.matches.some(m => m.phase !== 'group')) {
-    if (!confirm(`K.o.-Phase neu generieren? Alle bestehenden K.o.-Spiele werden gelöscht.`)) return;
-  }
-
-  // Setzen: zuerst alle Gruppensieger (nach Punkten sortiert), dann Zweite, dann Dritte…
-  const byPos = {};
-  qualified.forEach(q => {
-    if (!byPos[q.pos]) byPos[q.pos] = [];
-    byPos[q.pos].push(q);
-  });
-  Object.values(byPos).forEach(arr => arr.sort((a, b) => b.pkt - a.pkt || b.diff - a.diff));
-
-  // Seeds: 1. alle Ersten, 2. alle Zweiten, ...
-  const seeds = [];
-  [0, 1, 2, 3].forEach(pos => { if (byPos[pos]) seeds.push(...byPos[pos]); });
-
-  const n = seeds.length;
-  // Runde bestimmen
-  let roundName;
-  if (n <= 2)       roundName = 'Finale';
-  else if (n <= 4)  roundName = 'Halbfinale';
-  else              roundName = 'Viertelfinale';
-
-  // Alle alten KO-Matches löschen
-  data.matches = data.matches.filter(m => m.phase === 'group');
-
-  // Kreuzpaarung: Seed 1 vs Seed N, Seed 2 vs Seed N-1, ...
-  const matchCount = Math.floor(n / 2);
-  for (let i = 0; i < matchCount; i++) {
-    data.matches.push({
-      id: genId(), groupId: null, phase: 'knockout', round: roundName,
-      homeId: seeds[i].teamId,
-      awayId: seeds[n - 1 - i].teamId,
-      date: '', time: '', field: '',
-      homeScore: null, awayScore: null,
-      penaltyHome: null, penaltyAway: null, played: false
+    // Qualifizierte Teams sammeln: alle Gruppen, jeweils top N
+    const qualified = [];
+    data.groups.forEach((g, gi) => {
+        const standings = computeStandings(g.id);
+        for (let pos = 0; pos < tpg && pos < standings.length; pos++) {
+            qualified.push({ teamId: standings[pos].teamId, pos, gi, pkt: standings[pos].pkt, diff: standings[pos].diff });
+        }
     });
-  }
 
-  saveData();
-  renderKnockoutAdmin();
-  showToast(`✅ ${matchCount} Spiele im ${roundName} generiert!`);
+    if (qualified.length < 2) {
+        alert('Zu wenig qualifizierte Teams! Mindestens 2 nötig. Sind Gruppenspiele eingetragen?');
+        return;
+    }
+
+    if (data.matches.some(m => m.phase !== 'group')) {
+        if (!confirm(`K.o.-Phase neu generieren? Alle bestehenden K.o.-Spiele werden gelöscht.`)) return;
+    }
+
+    // Setzen: zuerst alle Gruppensieger (nach Punkten sortiert), dann Zweite, dann Dritte…
+    const byPos = {};
+    qualified.forEach(q => {
+        if (!byPos[q.pos]) byPos[q.pos] = [];
+        byPos[q.pos].push(q);
+    });
+    Object.values(byPos).forEach(arr => arr.sort((a, b) => b.pkt - a.pkt || b.diff - a.diff));
+
+    // Seeds: 1. alle Ersten, 2. alle Zweiten, ...
+    const seeds = [];
+    [0, 1, 2, 3].forEach(pos => { if (byPos[pos]) seeds.push(...byPos[pos]); });
+
+    const n = seeds.length;
+    // Runde bestimmen
+    let roundName;
+    if (n <= 2) roundName = 'Finale';
+    else if (n <= 4) roundName = 'Halbfinale';
+    else roundName = 'Viertelfinale';
+
+    // Alle alten KO-Matches löschen
+    data.matches = data.matches.filter(m => m.phase === 'group');
+
+    // Kreuzpaarung: Seed 1 vs Seed N, Seed 2 vs Seed N-1, ...
+    const matchCount = Math.floor(n / 2);
+    for (let i = 0; i < matchCount; i++) {
+        data.matches.push({
+            id: genId(), groupId: null, phase: 'knockout', round: roundName,
+            homeId: seeds[i].teamId,
+            awayId: seeds[n - 1 - i].teamId,
+            date: '', time: '', field: '',
+            homeScore: null, awayScore: null,
+            penaltyHome: null, penaltyAway: null, played: false
+        });
+    }
+
+    saveData();
+    renderKnockoutAdmin();
+    showToast(`✅ ${matchCount} Spiele im ${roundName} generiert!`);
 }
 
 // ---- Sieger/Verlierer eines KO-Spiels ermitteln (inkl. Elfmeter) ----
 function getKoWinner(m) {
-  if (!m.played) return null;
-  if (m.homeScore > m.awayScore) return m.homeId;
-  if (m.awayScore > m.homeScore) return m.awayId;
-  // Unentschieden → Elfmeter
-  if (m.penaltyHome !== null && m.penaltyAway !== null && m.penaltyHome !== m.penaltyAway) {
-    return m.penaltyHome > m.penaltyAway ? m.homeId : m.awayId;
-  }
-  return null; // noch kein Sieger (Elfmeter fehlt oder ebenfalls gleich)
+    if (!m.played) return null;
+    if (m.homeScore > m.awayScore) return m.homeId;
+    if (m.awayScore > m.homeScore) return m.awayId;
+    // Unentschieden → Elfmeter
+    if (m.penaltyHome !== null && m.penaltyAway !== null && m.penaltyHome !== m.penaltyAway) {
+        return m.penaltyHome > m.penaltyAway ? m.homeId : m.awayId;
+    }
+    return null; // noch kein Sieger (Elfmeter fehlt oder ebenfalls gleich)
 }
 
 function getKoLoser(m) {
-  const winner = getKoWinner(m);
-  if (!winner) return null;
-  return winner === m.homeId ? m.awayId : m.homeId;
+    const winner = getKoWinner(m);
+    if (!winner) return null;
+    return winner === m.homeId ? m.awayId : m.homeId;
 }
 
 // ---- Nächste Runde aus Ergebnissen der aktuellen generieren ----
 function advanceToNextRound(currentRound) {
-  const koAll    = data.matches.filter(m => m.phase !== 'group');
-  const rMatches = koAll.filter(m => m.round === currentRound);
+    const koAll = data.matches.filter(m => m.phase !== 'group');
+    const rMatches = koAll.filter(m => m.round === currentRound);
 
-  // Alle Spiele müssen gespielt sein UND einen eindeutigen Sieger haben
-  const missingWinner = rMatches.filter(m => !getKoWinner(m));
-  if (missingWinner.length > 0) {
-    const drawCount = rMatches.filter(m => m.played && m.homeScore === m.awayScore).length;
-    if (drawCount > 0) {
-      alert(`${drawCount} Spiel(e) enden unentschieden – bitte zuerst das Elfmeterschießen eintragen!`);
-    } else {
-      alert('Bitte zuerst alle Ergebnisse der aktuellen Runde eintragen!');
+    // Alle Spiele müssen gespielt sein UND einen eindeutigen Sieger haben
+    const missingWinner = rMatches.filter(m => !getKoWinner(m));
+    if (missingWinner.length > 0) {
+        const drawCount = rMatches.filter(m => m.played && m.homeScore === m.awayScore).length;
+        if (drawCount > 0) {
+            alert(`${drawCount} Spiel(e) enden unentschieden – bitte zuerst das Elfmeterschießen eintragen!`);
+        } else {
+            alert('Bitte zuerst alle Ergebnisse der aktuellen Runde eintragen!');
+        }
+        return;
     }
-    return;
-  }
 
-  const nextRound = KO_NEXT_ROUND[currentRound];
+    const nextRound = KO_NEXT_ROUND[currentRound];
 
-  if (nextRound) {
-    const winners = rMatches.map(m => getKoWinner(m));
-    const n = winners.length;
-    for (let i = 0; i < Math.floor(n / 2); i++) {
-      data.matches.push({
-        id: genId(), groupId: null, phase: 'knockout', round: nextRound,
-        homeId: winners[i], awayId: winners[n - 1 - i],
-        date: '', time: '', field: '',
-        homeScore: null, awayScore: null,
-        penaltyHome: null, penaltyAway: null, played: false
-      });
+    if (nextRound) {
+        const winners = rMatches.map(m => getKoWinner(m));
+        const n = winners.length;
+        for (let i = 0; i < Math.floor(n / 2); i++) {
+            data.matches.push({
+                id: genId(), groupId: null, phase: 'knockout', round: nextRound,
+                homeId: winners[i], awayId: winners[n - 1 - i],
+                date: '', time: '', field: '',
+                homeScore: null, awayScore: null,
+                penaltyHome: null, penaltyAway: null, played: false
+            });
+        }
     }
-  }
 
-  // Halbfinale → Kleines Finale aus Verlierern
-  if (currentRound === 'Halbfinale' && rMatches.length >= 2) {
-    const losers = rMatches.map(m => getKoLoser(m));
-    data.matches.push({
-      id: genId(), groupId: null, phase: 'knockout', round: 'Kleines Finale',
-      homeId: losers[0], awayId: losers[1],
-      date: '', time: '', field: '',
-      homeScore: null, awayScore: null,
-      penaltyHome: null, penaltyAway: null, played: false
-    });
-  }
+    // Halbfinale → Kleines Finale aus Verlierern
+    if (currentRound === 'Halbfinale' && rMatches.length >= 2) {
+        const losers = rMatches.map(m => getKoLoser(m));
+        data.matches.push({
+            id: genId(), groupId: null, phase: 'knockout', round: 'Kleines Finale',
+            homeId: losers[0], awayId: losers[1],
+            date: '', time: '', field: '',
+            homeScore: null, awayScore: null,
+            penaltyHome: null, penaltyAway: null, played: false
+        });
+    }
 
-  saveData();
-  renderKnockoutAdmin();
-  const msg = currentRound === 'Halbfinale'
-    ? '✅ Finale + Kleines Finale generiert!'
-    : `✅ ${nextRound} generiert!`;
-  showToast(msg);
+    saveData();
+    renderKnockoutAdmin();
+    const msg = currentRound === 'Halbfinale'
+        ? '✅ Finale + Kleines Finale generiert!'
+        : `✅ ${nextRound} generiert!`;
+    showToast(msg);
 }
 
 function clearKnockout() {
-  if (!confirm('Alle K.o.-Spiele löschen?')) return;
-  data.matches = data.matches.filter(m => m.phase === 'group');
-  saveData();
-  renderKnockoutAdmin();
-  showToast('🗑️ K.o.-Phase zurückgesetzt.');
+    if (!confirm('Alle K.o.-Spiele löschen?')) return;
+    data.matches = data.matches.filter(m => m.phase === 'group');
+    saveData();
+    renderKnockoutAdmin();
+    showToast('🗑️ K.o.-Phase zurückgesetzt.');
 }
 
 function deleteKoMatch(id) {
-  if (!confirm('Spiel löschen?')) return;
-  data.matches = data.matches.filter(m => m.id !== id);
-  saveData();
-  renderKnockoutAdmin();
+    if (!confirm('Spiel löschen?')) return;
+    data.matches = data.matches.filter(m => m.id !== id);
+    saveData();
+    renderKnockoutAdmin();
 }
+
+// =====================
+//  PUBLIC VIEW
+// =====================
+function renderPublic() {
+    // Header
+    const t = data.tournament;
+    document.getElementById('pub-title').textContent = t.name || 'Fußballturnier';
+    document.getElementById('nav-title').textContent = t.name || 'Schulturnier';
+    const meta = [t.date ? formatDate(t.date) : '', t.location || ''].filter(Boolean).join(' · ');
+    document.getElementById('pub-meta').textContent = meta;
+    document.getElementById('pub-desc').textContent = t.description || '';
+
+    renderPublicStandings();
+    renderPublicSchedule();
+    renderPublicKnockout();
+}
+
+// --- Tabelle ---
+function renderPublicStandings() {
+    const c = document.getElementById('pub-standings');
+    if (data.groups.length === 0) {
+        c.innerHTML = '<div class="card"><p class="muted" style="text-align:center;padding:20px">Noch keine Gruppen / Tabellen vorhanden.</p></div>'; return;
+    }
+
+    let html = '';
+    data.groups.forEach(g => {
+        const standings = computeStandings(g.id);
+        html += `
+      <div class="card">
+        <h3>${escHtml(g.name)}</h3>
+        <div class="table-wrapper">
+          <table class="standings-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Team</th><th title="Spiele">Sp</th>
+                <th title="Siege">S</th><th title="Unentschieden">U</th><th title="Niederlagen">N</th>
+                <th title="Tore">Tore</th><th title="Tordifferenz">Diff</th><th title="Punkte">Pkt</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${standings.length === 0
+                ? '<tr><td colspan="9" class="muted" style="padding:16px;text-align:center">Noch keine Spiele gespielt.</td></tr>'
+                : standings.map((s, i) => {
+                    const team = data.teams.find(t => t.id === s.teamId);
+                    const diffStr = s.diff > 0 ? '+' + s.diff : String(s.diff);
+                    return `
+                      <tr class="${i === 0 ? 'row-first' : ''}">
+                        <td><span class="rank">${i + 1}</span></td>
+                        <td>
+                          <div class="team-name-cell">
+                            <span class="dot" style="background:${team ? team.color : '#888'}"></span>
+                            ${team ? escHtml(team.name) : '?'}
+                          </div>
+                        </td>
+                        <td>${s.sp}</td><td>${s.s}</td><td>${s.u}</td><td>${s.n}</td>
+                        <td>${s.tore}:${s.gegen}</td>
+                        <td class="${s.diff > 0 ? 'pos' : s.diff < 0 ? 'neg' : ''}">${diffStr}</td>
+                        <td><strong>${s.pkt}</strong></td>
+                      </tr>
+                    `;
+                }).join('')
+            }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+    });
+
+    c.innerHTML = html;
+}
+
+// --- Spielplan ---
+function renderPublicSchedule() {
+    const c = document.getElementById('pub-schedule');
+    if (data.matches.length === 0) {
+        c.innerHTML = '<div class="card"><p class="muted" style="text-align:center;padding:20px">Noch keine Spiele geplant.</p></div>'; return;
+    }
+
+    // Nach Uhrzeit sortieren (ohne Zeit ans Ende)
+    const sorted = [...data.matches].sort((a, b) => {
+        if (!a.time && !b.time) return 0;
+        if (!a.time) return 1; if (!b.time) return -1;
+        return a.time > b.time ? 1 : -1;
+    });
+
+    // Nach Phase/Gruppe gruppieren
+    const groupMatches = [];
+    const koMatches = [];
+    sorted.forEach(m => (m.phase === 'group' ? groupMatches : koMatches).push(m));
+
+    let html = '';
+
+    if (groupMatches.length > 0) {
+        html += '<div class="card"><h3>Gruppenspiele</h3><div class="pub-matches">';
+        groupMatches.forEach(m => { html += pubMatchHtml(m); });
+        html += '</div></div>';
+    }
+
+    if (koMatches.length > 0) {
+        html += '<div class="card"><h3>K.o.-Phase</h3><div class="pub-matches">';
+        koMatches.forEach(m => { html += pubMatchHtml(m); });
+        html += '</div></div>';
+    }
+
+    c.innerHTML = html;
+}
+
+function pubMatchHtml(m) {
+    const home = data.teams.find(t => t.id === m.homeId);
+    const away = data.teams.find(t => t.id === m.awayId);
+    const group = m.groupId ? data.groups.find(g => g.id === m.groupId) : null;
+    const isDraw = m.played && m.homeScore === m.awayScore;
+    const penDone = isDraw && m.phase !== 'group' && m.penaltyHome !== null && m.penaltyAway !== null;
+    const scoreLabel = m.played
+        ? `${m.homeScore} : ${m.awayScore}${penDone ? `<br><small style="font-size:0.7rem;opacity:0.8">${m.penaltyHome}:${m.penaltyAway} n.E.</small>` : ''}`
+        : 'vs';
+    return `
+    <div class="pub-match ${m.played ? 'played' : ''}">
+      <div class="pub-match-info">
+        ${m.time ? `<span class="time-badge">🕐 ${m.time}</span>` : ''}
+        ${m.field ? `<span class="field-badge">🏟 ${escHtml(m.field)}</span>` : ''}
+        ${group ? `<span class="group-badge">${escHtml(group.name)}</span>` : ''}
+        ${m.round ? `<span class="ko-badge">${escHtml(m.round)}</span>` : ''}
+      </div>
+      <div class="pub-match-teams">
+        <span class="pub-team">${home ? escHtml(home.name) : '?'}</span>
+        <span class="pub-score ${m.played ? 'played-score' : ''}" style="line-height:1.3">${scoreLabel}</span>
+        <span class="pub-team" style="text-align:right">${away ? escHtml(away.name) : '?'}</span>
+      </div>
+    </div>
+  `;
+}
+
+// --- K.o.-Phase ---
+function renderPublicKnockout() {
+    const c = document.getElementById('pub-knockout');
+    const koMatches = data.matches.filter(m => m.phase !== 'group');
+
+    if (koMatches.length === 0) {
+        c.innerHTML = '<div class="card"><p class="muted" style="text-align:center;padding:20px">K.o.-Phase wurde noch nicht gestartet.</p></div>'; return;
+    }
+
+    const rounds = ['Viertelfinale', 'Halbfinale', 'Kleines Finale', 'Finale'];
+    const byRound = {};
+    koMatches.forEach(m => {
+        if (!byRound[m.round]) byRound[m.round] = [];
+        byRound[m.round].push(m);
+    });
+
+    let html = '<div class="bracket">';
+    rounds.forEach(round => {
+        const rMatches = byRound[round];
+        if (!rMatches) return;
+        const isFinale = round === 'Finale';
+        html += `<div class="bracket-round"><h4>${round}</h4>`;
+        rMatches.forEach(m => {
+            const home = data.teams.find(t => t.id === m.homeId);
+            const away = data.teams.find(t => t.id === m.awayId);
+            const winnerId = getKoWinner(m);
+            const isDraw = m.played && m.homeScore === m.awayScore;
+            const homeWon = winnerId === m.homeId;
+            const awayWon = winnerId === m.awayId;
+            const penPlayed = isDraw && m.penaltyHome !== null && m.penaltyAway !== null;
+            const scoreDisplay = m.played
+                ? `${m.homeScore}:${m.awayScore}${penPlayed ? ` <span class="bracket-pen">(${m.penaltyHome}:${m.penaltyAway} n.E.)</span>` : (isDraw ? ' <span class="bracket-pen">?</span>' : '')}`
+                : 'vs';
+            html += `
+        <div class="bracket-match ${isFinale ? 'finale' : ''}">
+          <div class="bracket-team ${homeWon ? 'winner' : ''}">
+            <span class="dot" style="background:${home ? home.color : '#888'}"></span>
+            <span>${home ? escHtml(home.name) : '?'}</span>
+            ${m.played ? `<strong>${m.homeScore}</strong>` : ''}
+          </div>
+          <div class="bracket-score">${scoreDisplay}</div>
+          <div class="bracket-team ${awayWon ? 'winner' : ''}">
+            <span class="dot" style="background:${away ? away.color : '#888'}"></span>
+            <span>${away ? escHtml(away.name) : '?'}</span>
+            ${m.played ? `<strong>${m.awayScore}</strong>` : ''}
+          </div>
+        </div>
+      `;
+        });
+        html += '</div>';
+    });
+    html += '</div>';
+
+    // Turniersieger
+    const finale = byRound['Finale'];
+    if (finale && finale.length > 0) {
+        const fm = finale[0];
+        const winId = getKoWinner(fm);
+        const winner = winId ? data.teams.find(t => t.id === winId) : null;
+        if (winner) {
+            html += `<div class="winner-banner">🏆 Turniersieger: <strong>${escHtml(winner.name)}</strong> 🏆</div>`;
+        }
+    }
+
+    c.innerHTML = html;
+}
+
