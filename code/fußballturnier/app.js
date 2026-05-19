@@ -449,3 +449,120 @@ function updateMatch(id, field, value) {
     if (match) { match[field] = value; saveData(); }
 }
 
+// =====================
+//  ERGEBNISSE
+// =====================
+function renderResults() {
+  const c = document.getElementById('tab-results');
+  let html = '<div class="section-header"><h2>Ergebnisse eintragen</h2></div>';
+
+  data.groups.forEach(g => {
+    const matches = data.matches.filter(m => m.groupId === g.id);
+    if (matches.length === 0) return;
+    html += `<div class="card"><h3>${escHtml(g.name)}</h3><div class="results-list">`;
+    matches.forEach(m => { html += resultRowHtml(m); });
+    html += '</div></div>';
+  });
+
+  const koMatches = data.matches.filter(m => m.phase !== 'group');
+  if (koMatches.length > 0) {
+    html += '<div class="card"><h3>K.o.-Spiele</h3><div class="results-list">';
+    koMatches.forEach(m => { html += resultRowHtml(m, true); });
+    html += '</div></div>';
+  }
+
+  if (data.matches.length === 0) {
+    html += '<p class="empty-state">Keine Spiele vorhanden.</p>';
+  }
+
+  c.innerHTML = html;
+}
+
+function resultRowHtml(m, showRound) {
+  const home    = data.teams.find(t => t.id === m.homeId);
+  const away    = data.teams.find(t => t.id === m.awayId);
+  const homeVal = m.homeScore !== null ? m.homeScore : '';
+  const awayVal = m.awayScore !== null ? m.awayScore : '';
+  const isDraw  = m.played && m.homeScore === m.awayScore;
+  const isKo    = m.phase !== 'group';
+  const info    = m.time ? `<span style="font-size:0.75rem;color:var(--text-muted)">🕐 ${m.time}${m.field ? '  🏟 ' + escHtml(m.field) : ''}</span>` : '';
+
+  // Penalty-Gewinner ermitteln
+  const penWinner = (isDraw && isKo && m.penaltyHome !== null && m.penaltyAway !== null)
+    ? (m.penaltyHome > m.penaltyAway ? m.homeId : m.awayId) : null;
+
+  // Status-Badge
+  let statusBadge;
+  if (!m.played) {
+    statusBadge = '<span class="badge badge-gray">offen</span>';
+  } else if (isDraw && isKo && !penWinner) {
+    statusBadge = '<span class="badge badge-penalty">⚠️ Elfmeter nötig</span>';
+  } else if (penWinner) {
+    const w = data.teams.find(t => t.id === penWinner);
+    statusBadge = `<span class="badge badge-green">✓ n.E. ${w ? escHtml(w.name) : ''}</span>`;
+  } else {
+    statusBadge = '<span class="badge badge-green">✓ Gespielt</span>';
+  }
+
+  // Elfmeter-Block (nur bei K.o.-Unentschieden)
+  const penaltyBlock = (isDraw && isKo) ? `
+    <div class="penalty-row">
+      <span class="penalty-label">🥅 Elfmeter</span>
+      <div class="score-inputs">
+        <input type="number" min="0" class="score-input score-input-sm" value="${m.penaltyHome !== null ? m.penaltyHome : ''}"
+          onchange="setPenalty('${m.id}','home',this.value)" placeholder="-">
+        <span class="colon">:</span>
+        <input type="number" min="0" class="score-input score-input-sm" value="${m.penaltyAway !== null ? m.penaltyAway : ''}"
+          onchange="setPenalty('${m.id}','away',this.value)" placeholder="-">
+      </div>
+      <span class="penalty-hint">Wer hat das Elfmeterschießen gewonnen?</span>
+    </div>
+  ` : '';
+
+  return `
+    <div class="result-row ${isDraw && isKo ? 'needs-penalty' : ''}">
+      ${showRound && m.round ? `<span class="badge-round">${escHtml(m.round)}</span>` : ''}
+      <span class="team-name">${home ? escHtml(home.name) : '?'}</span>
+      <div class="score-inputs">
+        <input type="number" min="0" class="score-input" value="${homeVal}"
+          onchange="setScore('${m.id}','home',this.value)" placeholder="-">
+        <span class="colon">:</span>
+        <input type="number" min="0" class="score-input" value="${awayVal}"
+          onchange="setScore('${m.id}','away',this.value)" placeholder="-">
+      </div>
+      <span class="team-name" style="text-align:right">${away ? escHtml(away.name) : '?'}</span>
+      <div class="result-status">${statusBadge}</div>
+    </div>
+    ${penaltyBlock}
+    ${info ? `<div style="padding: 0 14px 6px;">${info}</div>` : ''}
+  `;
+}
+
+function setScore(matchId, side, value) {
+  const match = data.matches.find(m => m.id === matchId);
+  if (!match) return;
+  const score = parseInt(value);
+  if (isNaN(score) || score < 0) return;
+  if (side === 'home') match.homeScore = score;
+  else match.awayScore = score;
+  match.played = (match.homeScore !== null && match.awayScore !== null);
+  // Penalty zurücksetzen wenn Ergebnis geändert und kein Unentschieden mehr
+  if (match.played && match.homeScore !== match.awayScore) {
+    match.penaltyHome = null;
+    match.penaltyAway = null;
+  }
+  saveData();
+  // KO-Matches neu rendern damit Elfmeter-Block erscheint/verschwindet
+  if (match.phase !== 'group') renderResults();
+}
+
+function setPenalty(matchId, side, value) {
+  const match = data.matches.find(m => m.id === matchId);
+  if (!match) return;
+  const score = parseInt(value);
+  if (isNaN(score) || score < 0) return;
+  if (side === 'home') match.penaltyHome = score;
+  else match.penaltyAway = score;
+  saveData();
+  renderResults();
+}
