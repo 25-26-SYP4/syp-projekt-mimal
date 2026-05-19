@@ -453,59 +453,59 @@ function updateMatch(id, field, value) {
 //  ERGEBNISSE
 // =====================
 function renderResults() {
-  const c = document.getElementById('tab-results');
-  let html = '<div class="section-header"><h2>Ergebnisse eintragen</h2></div>';
+    const c = document.getElementById('tab-results');
+    let html = '<div class="section-header"><h2>Ergebnisse eintragen</h2></div>';
 
-  data.groups.forEach(g => {
-    const matches = data.matches.filter(m => m.groupId === g.id);
-    if (matches.length === 0) return;
-    html += `<div class="card"><h3>${escHtml(g.name)}</h3><div class="results-list">`;
-    matches.forEach(m => { html += resultRowHtml(m); });
-    html += '</div></div>';
-  });
+    data.groups.forEach(g => {
+        const matches = data.matches.filter(m => m.groupId === g.id);
+        if (matches.length === 0) return;
+        html += `<div class="card"><h3>${escHtml(g.name)}</h3><div class="results-list">`;
+        matches.forEach(m => { html += resultRowHtml(m); });
+        html += '</div></div>';
+    });
 
-  const koMatches = data.matches.filter(m => m.phase !== 'group');
-  if (koMatches.length > 0) {
-    html += '<div class="card"><h3>K.o.-Spiele</h3><div class="results-list">';
-    koMatches.forEach(m => { html += resultRowHtml(m, true); });
-    html += '</div></div>';
-  }
+    const koMatches = data.matches.filter(m => m.phase !== 'group');
+    if (koMatches.length > 0) {
+        html += '<div class="card"><h3>K.o.-Spiele</h3><div class="results-list">';
+        koMatches.forEach(m => { html += resultRowHtml(m, true); });
+        html += '</div></div>';
+    }
 
-  if (data.matches.length === 0) {
-    html += '<p class="empty-state">Keine Spiele vorhanden.</p>';
-  }
+    if (data.matches.length === 0) {
+        html += '<p class="empty-state">Keine Spiele vorhanden.</p>';
+    }
 
-  c.innerHTML = html;
+    c.innerHTML = html;
 }
 
 function resultRowHtml(m, showRound) {
-  const home    = data.teams.find(t => t.id === m.homeId);
-  const away    = data.teams.find(t => t.id === m.awayId);
-  const homeVal = m.homeScore !== null ? m.homeScore : '';
-  const awayVal = m.awayScore !== null ? m.awayScore : '';
-  const isDraw  = m.played && m.homeScore === m.awayScore;
-  const isKo    = m.phase !== 'group';
-  const info    = m.time ? `<span style="font-size:0.75rem;color:var(--text-muted)">🕐 ${m.time}${m.field ? '  🏟 ' + escHtml(m.field) : ''}</span>` : '';
+    const home = data.teams.find(t => t.id === m.homeId);
+    const away = data.teams.find(t => t.id === m.awayId);
+    const homeVal = m.homeScore !== null ? m.homeScore : '';
+    const awayVal = m.awayScore !== null ? m.awayScore : '';
+    const isDraw = m.played && m.homeScore === m.awayScore;
+    const isKo = m.phase !== 'group';
+    const info = m.time ? `<span style="font-size:0.75rem;color:var(--text-muted)">🕐 ${m.time}${m.field ? '  🏟 ' + escHtml(m.field) : ''}</span>` : '';
 
-  // Penalty-Gewinner ermitteln
-  const penWinner = (isDraw && isKo && m.penaltyHome !== null && m.penaltyAway !== null)
-    ? (m.penaltyHome > m.penaltyAway ? m.homeId : m.awayId) : null;
+    // Penalty-Gewinner ermitteln
+    const penWinner = (isDraw && isKo && m.penaltyHome !== null && m.penaltyAway !== null)
+        ? (m.penaltyHome > m.penaltyAway ? m.homeId : m.awayId) : null;
 
-  // Status-Badge
-  let statusBadge;
-  if (!m.played) {
-    statusBadge = '<span class="badge badge-gray">offen</span>';
-  } else if (isDraw && isKo && !penWinner) {
-    statusBadge = '<span class="badge badge-penalty">⚠️ Elfmeter nötig</span>';
-  } else if (penWinner) {
-    const w = data.teams.find(t => t.id === penWinner);
-    statusBadge = `<span class="badge badge-green">✓ n.E. ${w ? escHtml(w.name) : ''}</span>`;
-  } else {
-    statusBadge = '<span class="badge badge-green">✓ Gespielt</span>';
-  }
+    // Status-Badge
+    let statusBadge;
+    if (!m.played) {
+        statusBadge = '<span class="badge badge-gray">offen</span>';
+    } else if (isDraw && isKo && !penWinner) {
+        statusBadge = '<span class="badge badge-penalty">⚠️ Elfmeter nötig</span>';
+    } else if (penWinner) {
+        const w = data.teams.find(t => t.id === penWinner);
+        statusBadge = `<span class="badge badge-green">✓ n.E. ${w ? escHtml(w.name) : ''}</span>`;
+    } else {
+        statusBadge = '<span class="badge badge-green">✓ Gespielt</span>';
+    }
 
-  // Elfmeter-Block (nur bei K.o.-Unentschieden)
-  const penaltyBlock = (isDraw && isKo) ? `
+    // Elfmeter-Block (nur bei K.o.-Unentschieden)
+    const penaltyBlock = (isDraw && isKo) ? `
     <div class="penalty-row">
       <span class="penalty-label">🥅 Elfmeter</span>
       <div class="score-inputs">
@@ -519,7 +519,7 @@ function resultRowHtml(m, showRound) {
     </div>
   ` : '';
 
-  return `
+    return `
     <div class="result-row ${isDraw && isKo ? 'needs-penalty' : ''}">
       ${showRound && m.round ? `<span class="badge-round">${escHtml(m.round)}</span>` : ''}
       <span class="team-name">${home ? escHtml(home.name) : '?'}</span>
@@ -539,30 +539,64 @@ function resultRowHtml(m, showRound) {
 }
 
 function setScore(matchId, side, value) {
-  const match = data.matches.find(m => m.id === matchId);
-  if (!match) return;
-  const score = parseInt(value);
-  if (isNaN(score) || score < 0) return;
-  if (side === 'home') match.homeScore = score;
-  else match.awayScore = score;
-  match.played = (match.homeScore !== null && match.awayScore !== null);
-  // Penalty zurücksetzen wenn Ergebnis geändert und kein Unentschieden mehr
-  if (match.played && match.homeScore !== match.awayScore) {
-    match.penaltyHome = null;
-    match.penaltyAway = null;
-  }
-  saveData();
-  // KO-Matches neu rendern damit Elfmeter-Block erscheint/verschwindet
-  if (match.phase !== 'group') renderResults();
+    const match = data.matches.find(m => m.id === matchId);
+    if (!match) return;
+    const score = parseInt(value);
+    if (isNaN(score) || score < 0) return;
+    if (side === 'home') match.homeScore = score;
+    else match.awayScore = score;
+    match.played = (match.homeScore !== null && match.awayScore !== null);
+    // Penalty zurücksetzen wenn Ergebnis geändert und kein Unentschieden mehr
+    if (match.played && match.homeScore !== match.awayScore) {
+        match.penaltyHome = null;
+        match.penaltyAway = null;
+    }
+    saveData();
+    // KO-Matches neu rendern damit Elfmeter-Block erscheint/verschwindet
+    if (match.phase !== 'group') renderResults();
 }
 
 function setPenalty(matchId, side, value) {
-  const match = data.matches.find(m => m.id === matchId);
-  if (!match) return;
-  const score = parseInt(value);
-  if (isNaN(score) || score < 0) return;
-  if (side === 'home') match.penaltyHome = score;
-  else match.penaltyAway = score;
-  saveData();
-  renderResults();
+    const match = data.matches.find(m => m.id === matchId);
+    if (!match) return;
+    const score = parseInt(value);
+    if (isNaN(score) || score < 0) return;
+    if (side === 'home') match.penaltyHome = score;
+    else match.penaltyAway = score;
+    saveData();
+    renderResults();
 }
+
+// =====================
+//  TABELLEN-BERECHNUNG
+// =====================
+function computeStandings(groupId) {
+    const group = data.groups.find(g => g.id === groupId);
+    if (!group) return [];
+
+    const stats = {};
+    group.teamIds.forEach(tid => {
+        stats[tid] = { teamId: tid, sp: 0, s: 0, u: 0, n: 0, tore: 0, gegen: 0, diff: 0, pkt: 0 };
+    });
+
+    data.matches
+        .filter(m => m.groupId === groupId && m.played)
+        .forEach(m => {
+            const h = stats[m.homeId];
+            const a = stats[m.awayId];
+            if (!h || !a) return;
+            h.sp++; a.sp++;
+            h.tore += m.homeScore; h.gegen += m.awayScore;
+            a.tore += m.awayScore; a.gegen += m.homeScore;
+            h.diff = h.tore - h.gegen;
+            a.diff = a.tore - a.gegen;
+            if (m.homeScore > m.awayScore) { h.s++; h.pkt += 3; a.n++; }
+            else if (m.homeScore < m.awayScore) { a.s++; a.pkt += 3; h.n++; }
+            else { h.u++; a.u++; h.pkt++; a.pkt++; }
+        });
+
+    return Object.values(stats).sort((a, b) =>
+        b.pkt - a.pkt || b.diff - a.diff || b.tore - a.tore || a.gegen - b.gegen
+    );
+}
+
