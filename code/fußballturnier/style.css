@@ -576,3 +576,76 @@ body {
   font-weight: 700;
   font-family: 'Barlow Condensed', sans-serif;
 }
+
+
+/* ==============================
+   BRACKET / KNOCKOUT
+================================ */
+.bracket {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 10px;
+}
+
+.bracket-round {
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.bracket-round h4 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.bracket-match {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.bracket-match.finale {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(244,196,48,0.2);
+}
+
+.bracket-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.bracket-team:first-child { border-bottom: 1px solid var(--border); }
+
+.bracket-team span:last-of-type,
+.bracket-team strong {
+  margin-left: auto;
+  font-weight: 700;
+}
+
+.bracket-team.winner { background: rgba(45,106,79,0.25); color: var(--green-bright); }
+
+.winner-banner {
+  margin-top: 20px;
+  background: linear-gradient(135deg, var(--green), var(--green-light));
+  color: var(--white);
+  text-align: center;
+  padding: 18px 24px;
+  border-radius: var(--radius);
+  font-size: 1.2rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.5px;
+}
