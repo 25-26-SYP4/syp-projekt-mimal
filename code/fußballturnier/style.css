@@ -1254,7 +1254,10 @@ input[type="text"].input-sm {
   box-shadow: var(--shadow);
 }
 
-.login-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.login-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
 
 .login-card h2 {
   font-family: 'Bebas Neue', cursive;
@@ -1263,9 +1266,15 @@ input[type="text"].input-sm {
   margin-bottom: 6px;
 }
 
-.login-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
+.login-card p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
 
-.pin-input-wrap { margin-bottom: 10px; }
+.pin-input-wrap {
+  margin-bottom: 10px;
+}
 
 .pin-input-wrap input {
   text-align: center;
@@ -1274,10 +1283,25 @@ input[type="text"].input-sm {
   font-weight: 700;
 }
 
-.error-text { color: var(--red); font-size: 0.85rem; min-height: 20px; margin-bottom: 10px; }
+.error-text {
+  color: var(--red);
+  font-size: 0.85rem;
+  min-height: 20px;
+  margin-bottom: 10px;
+}
 
-.pin-hint { margin-top: 14px; color: var(--text-muted); font-size: 0.8rem; }
-.pin-hint code { color: var(--green-bright); background: var(--dark3); padding: 1px 6px; border-radius: 4px; }
+.pin-hint {
+  margin-top: 14px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.pin-hint code {
+  color: var(--green-bright);
+  background: var(--dark3);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
 
 
 
@@ -1290,7 +1314,7 @@ input[type="text"].input-sm {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.75);
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
@@ -1299,7 +1323,9 @@ input[type="text"].input-sm {
   padding: 20px;
 }
 
-.modal-overlay.hidden { display: none; }
+.modal-overlay.hidden {
+  display: none;
+}
 
 .modal-card {
   background: var(--card);
@@ -1328,7 +1354,8 @@ input[type="text"].input-sm {
   background: var(--dark3);
   border: 1px solid var(--border);
   color: var(--text-muted);
-  width: 30px; height: 30px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   cursor: pointer;
   font-size: 0.8rem;
@@ -1338,7 +1365,11 @@ input[type="text"].input-sm {
   justify-content: center;
 }
 
-.modal-close:hover { background: var(--red); color: var(--white); border-color: var(--red); }
+.modal-close:hover {
+  background: var(--red);
+  color: var(--white);
+  border-color: var(--red);
+}
 
 .modal-actions {
   display: flex;
@@ -1347,4 +1378,161 @@ input[type="text"].input-sm {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
+}
+
+/* ==============================
+   TOAST
+================================ */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--green);
+  color: var(--white);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  z-index: 2000;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+  box-shadow: var(--shadow);
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ==============================
+   EMPTY / MUTED
+================================ */
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 20px;
+  font-size: 0.95rem;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.mt-8 {
+  margin-top: 8px;
+}
+
+/* ==============================
+   SCROLLBAR
+================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--dark2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--green);
+}
+
+/* ==============================
+   RESPONSIVE
+================================ */
+@media (max-width: 600px) {
+  .navbar {
+    padding: 0 14px;
+  }
+
+  .nav-btn {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .admin-header {
+    padding: 12px 16px;
+  }
+
+  .admin-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .match-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .result-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .result-row .team-name {
+    text-align: left !important;
+  }
+
+  .score-inputs {
+    align-self: center;
+  }
+
+  .bracket {
+    flex-direction: column;
+  }
+
+  .bracket-round {
+    min-width: auto;
+  }
+
+  .pub-match-teams {
+    font-size: 0.9rem;
+  }
+
+  .pub-hero {
+    padding: 40px 16px 36px;
+  }
+
+  .modal-card {
+    padding: 20px;
+  }
+
+  .login-card {
+    padding: 28px 20px;
+  }
+
+  .admin-tabs {
+    padding: 0 8px;
+  }
+
+  .tab-btn {
+    padding: 11px 12px;
+    font-size: 0.8rem;
+  }
+
+  .card {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .nav-btn .nav-icon-sm~* {
+    display: none;
+  }
 }
