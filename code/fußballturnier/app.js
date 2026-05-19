@@ -176,3 +176,86 @@ function saveSettings() {
   document.getElementById('nav-title').textContent = data.tournament.name;
   showToast('✅ Einstellungen gespeichert!');
 }
+
+// =====================
+//  TEAMS
+// =====================
+function renderTeams() {
+  const c = document.getElementById('tab-teams');
+  const list = data.teams.map(t => `
+    <div class="card team-card">
+      <div class="team-card-header">
+        <div class="team-color-dot" style="background:${t.color}"></div>
+        <strong>${escHtml(t.name)}</strong>
+        <span class="badge">${t.players.length} Spieler</span>
+        <div class="card-actions">
+          <button class="btn btn-sm btn-outline" onclick="openTeamModal('${t.id}')">✏️ Bearbeiten</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTeam('${t.id}')">🗑️</button>
+        </div>
+      </div>
+      ${t.players.length > 0
+        ? `<div class="players-list">${t.players.map((p, i) => `<span class="player-tag">${i + 1}. ${escHtml(p)}</span>`).join('')}</div>`
+        : '<p class="muted">Noch keine Spieler eingetragen.</p>'
+      }
+    </div>
+  `).join('');
+
+  c.innerHTML = `
+    <div class="section-header">
+      <h2>Teams (${data.teams.length})</h2>
+      <button class="btn btn-primary" onclick="openTeamModal()">+ Team hinzufügen</button>
+    </div>
+    ${data.teams.length === 0 ? '<p class="empty-state">Noch keine Teams angelegt. Füge das erste Team hinzu.</p>' : list}
+  `;
+}
+
+function openTeamModal(id) {
+  const team = id ? data.teams.find(t => t.id === id) : null;
+  showModal(`
+    <h3>${team ? 'Team bearbeiten' : 'Neues Team'}</h3>
+    <div class="form-group">
+      <label>Teamname *</label>
+      <input type="text" id="m-name" value="${team ? escHtml(team.name) : ''}" placeholder="z.B. Klasse 3A">
+    </div>
+    <div class="form-group">
+      <label>Teamfarbe</label>
+      <input type="color" id="m-color" value="${team ? team.color : '#2d6a4f'}">
+    </div>
+    <div class="form-group">
+      <label>Spieler (einen Namen pro Zeile)</label>
+      <textarea id="m-players" rows="7" placeholder="Max Mustermann&#10;Tobias Huber&#10;Lisa Maier&#10;...">${team ? team.players.join('\n') : ''}</textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveTeam('${id || ''}')">Speichern</button>
+    </div>
+  `);
+}
+
+function saveTeam(id) {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { alert('Bitte einen Teamnamen eingeben!'); return; }
+  const color   = document.getElementById('m-color').value;
+  const players = document.getElementById('m-players').value.split('\n').map(p => p.trim()).filter(Boolean);
+
+  if (id) {
+    const team = data.teams.find(t => t.id === id);
+    Object.assign(team, { name, color, players });
+  } else {
+    data.teams.push({ id: genId(), name, color, players });
+  }
+  saveData();
+  closeModal();
+  renderTeams();
+  showToast(id ? '✅ Team aktualisiert!' : '✅ Team hinzugefügt!');
+}
+
+function deleteTeam(id) {
+  if (!confirm('Team wirklich löschen? Alle zugehörigen Spiele werden ebenfalls entfernt.')) return;
+  data.teams   = data.teams.filter(t => t.id !== id);
+  data.groups.forEach(g => { g.teamIds = g.teamIds.filter(tid => tid !== id); });
+  data.matches = data.matches.filter(m => m.homeId !== id && m.awayId !== id);
+  saveData();
+  renderTeams();
+  showToast('🗑️ Team gelöscht!');
+}
