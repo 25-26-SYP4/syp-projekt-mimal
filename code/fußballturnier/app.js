@@ -1090,3 +1090,21 @@ function renderPublicKnockout() {
     c.innerHTML = html;
 }
 
+
+// =====================
+//  MODAL
+// =====================
+function showModal(html) {
+    document.getElementById('modal-body').innerHTML = html;
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    // Focus first input
+    setTimeout(() => {
+        const first = document.querySelector('#modal-body input[type="text"]');
+        if (first) first.focus();
+    }, 50);
+}
+
+function closeModal() {
+    document.getElementById('modal-overlay').classList.add('hidden');
+}
+
