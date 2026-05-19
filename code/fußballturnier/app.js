@@ -1120,3 +1120,13 @@ function showToast(msg) {
     window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
+
+// =====================
+//  THEME TOGGLE
+// =====================
+function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    document.getElementById('theme-toggle').textContent = isLight ? '☀️' : '🌙';
+    localStorage.setItem('fussball_theme', isLight ? 'light' : 'dark');
+}
+
