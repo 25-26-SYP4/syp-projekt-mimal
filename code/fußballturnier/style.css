@@ -270,3 +270,48 @@ body {
   max-width: 500px;
   margin: 0 auto;
 }
+
+/* ==============================
+   PUBLIC TABS
+================================ */
+.pub-tabs {
+  display: flex;
+  background: var(--dark2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pub-tab {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 14px 20px;
+  cursor: pointer;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.pub-tab:hover { color: var(--text); }
+.pub-tab.active { color: var(--green-bright); border-bottom-color: var(--green-bright); }
+
+.pub-section { display: none; }
+.pub-section.active { display: block; }
+
+.section-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+  margin-top: 8px;
+}
