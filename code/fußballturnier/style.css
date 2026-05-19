@@ -1230,3 +1230,51 @@ input[type="text"].input-sm {
   font-size: 1.05rem;
   width: 100%;
 }
+
+/* ==============================
+   LOGIN
+================================ */
+.login-overlay {
+  min-height: calc(100vh - 56px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--dark);
+}
+
+.login-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 32px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.login-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+.login-card h2 {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 2rem;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.login-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
+
+.pin-input-wrap { margin-bottom: 10px; }
+
+.pin-input-wrap input {
+  text-align: center;
+  font-size: 1.3rem;
+  letter-spacing: 4px;
+  font-weight: 700;
+}
+
+.error-text { color: var(--red); font-size: 0.85rem; min-height: 20px; margin-bottom: 10px; }
+
+.pin-hint { margin-top: 14px; color: var(--text-muted); font-size: 0.8rem; }
+.pin-hint code { color: var(--green-bright); background: var(--dark3); padding: 1px 6px; border-radius: 4px; }
