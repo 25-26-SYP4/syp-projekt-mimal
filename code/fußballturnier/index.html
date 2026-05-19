@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schulturnier-Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="nav-icon">⚽</span>
+      <span id="nav-title">Schulturnier</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-btn active" data-view="public" onclick="showView('public')">
+        <span class="nav-icon-sm">🏆</span> Turnier
+      </button>
+      <button class="nav-btn" data-view="admin" onclick="showView('admin')">
+        <span class="nav-icon-sm">⚙️</span> Admin
+      </button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Farbmodus wechseln">🌙</button>
+    </div>
+  </nav>
+
+  <!-- ======================== -->
+  <!-- MODAL                    -->
+  <!-- ======================== -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
