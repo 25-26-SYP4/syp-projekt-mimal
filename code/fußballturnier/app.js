@@ -1130,3 +1130,30 @@ function toggleTheme() {
     localStorage.setItem('fussball_theme', isLight ? 'light' : 'dark');
 }
 
+// =====================
+//  INITIALISIERUNG
+// =====================
+document.addEventListener('DOMContentLoaded', () => {
+  loadData();
+
+  // Theme wiederherstellen
+  if (localStorage.getItem('fussball_theme') === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-toggle').textContent = '☀️';
+  }
+
+  // Enter-Taste für PIN-Login
+  document.getElementById('pin-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryLogin();
+  });
+
+  // Modal schließen bei Klick außen
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target.id === 'modal-overlay') closeModal();
+  });
+
+  // Nav-Titel setzen
+  document.getElementById('nav-title').textContent = data.tournament.name || 'Schulturnier';
+
+  showView('public');
+});
