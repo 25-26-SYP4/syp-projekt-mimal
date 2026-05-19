@@ -28,6 +28,101 @@
   </nav>
 
   <!-- ======================== -->
+  <!-- PUBLIC VIEW              -->
+  <!-- ======================== -->
+  <div id="view-public" class="view active">
+
+    <!-- Hero -->
+    <div class="pub-hero">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="hero-badge">Fußballturnier</div>
+        <h1 id="pub-title">Schulturnier</h1>
+        <p id="pub-meta" class="hero-meta"></p>
+        <p id="pub-desc" class="hero-desc"></p>
+      </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="pub-tabs">
+      <button class="pub-tab active" onclick="switchPubTab('standings', this)">📊 Tabelle</button>
+      <button class="pub-tab" onclick="switchPubTab('schedule', this)">📅 Spielplan</button>
+      <button class="pub-tab" onclick="switchPubTab('knockout', this)">🏅 K.o.-Phase</button>
+    </div>
+
+    <div class="container">
+      <div id="pub-section-standings" class="pub-section active">
+        <h2 class="section-title">Gruppenstand</h2>
+        <div id="pub-standings"></div>
+      </div>
+
+      <div id="pub-section-schedule" class="pub-section">
+        <h2 class="section-title">Spielplan</h2>
+        <div id="pub-schedule"></div>
+      </div>
+
+      <div id="pub-section-knockout" class="pub-section">
+        <h2 class="section-title">K.o.-Phase</h2>
+        <div id="pub-knockout"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== -->
+  <!-- ADMIN VIEW               -->
+  <!-- ======================== -->
+  <div id="view-admin" class="view">
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="login-overlay">
+      <div class="login-card">
+        <div class="login-icon">🔐</div>
+        <h2>Admin-Bereich</h2>
+        <p>PIN eingeben um fortzufahren</p>
+        <div class="pin-input-wrap">
+          <input type="password" id="pin-input" placeholder="PIN" maxlength="10" autocomplete="off">
+        </div>
+        <p id="pin-error" class="error-text"></p>
+        <button class="btn btn-primary btn-lg" onclick="tryLogin()">Anmelden</button>
+        <p class="pin-hint">Standard-PIN: <code>1234</code></p>
+      </div>
+    </div>
+
+    <!-- Admin Content -->
+    <div id="admin-content" class="hidden">
+      <div class="admin-header">
+        <h1>Admin-Bereich</h1>
+        <button class="btn btn-outline btn-sm" onclick="logout()">Abmelden</button>
+      </div>
+
+      <!-- Admin Tabs -->
+      <div class="admin-tabs">
+        <button class="tab-btn active" data-tab="teams" onclick="switchTab('teams')">👥 Teams</button>
+        <button class="tab-btn" data-tab="groups" onclick="switchTab('groups')">🗂 Gruppen</button>
+        <button class="tab-btn" data-tab="schedule" onclick="switchTab('schedule')">📅 Spielplan</button>
+        <button class="tab-btn" data-tab="results" onclick="switchTab('results')">⚽ Ergebnisse</button>
+        <button class="tab-btn" data-tab="knockout" onclick="switchTab('knockout')">🏅 K.o.-Phase</button>
+        <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">⚙️ Einstellungen</button>
+      </div>
+
+      <div class="container">
+        <div id="tab-teams" class="tab-content active"></div>
+        <div id="tab-groups" class="tab-content"></div>
+        <div id="tab-schedule" class="tab-content"></div>
+        <div id="tab-results" class="tab-content"></div>
+        <div id="tab-knockout" class="tab-content"></div>
+        <div id="tab-settings" class="tab-content">
+          <div class="section-header">
+            <h2>Turnier-Einstellungen</h2>
+          </div>
+          <div class="card">
+            <div id="settings-form"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== -->
   <!-- MODAL                    -->
   <!-- ======================== -->
   <div id="modal-overlay" class="modal-overlay hidden">
