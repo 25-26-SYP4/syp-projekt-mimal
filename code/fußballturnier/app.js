@@ -1108,3 +1108,15 @@ function closeModal() {
     document.getElementById('modal-overlay').classList.add('hidden');
 }
 
+
+// =====================
+//  TOAST
+// =====================
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
