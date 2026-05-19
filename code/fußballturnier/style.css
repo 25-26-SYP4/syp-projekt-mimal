@@ -299,11 +299,22 @@ body {
   white-space: nowrap;
 }
 
-.pub-tab:hover { color: var(--text); }
-.pub-tab.active { color: var(--green-bright); border-bottom-color: var(--green-bright); }
+.pub-tab:hover {
+  color: var(--text);
+}
 
-.pub-section { display: none; }
-.pub-section.active { display: block; }
+.pub-tab.active {
+  color: var(--green-bright);
+  border-bottom-color: var(--green-bright);
+}
+
+.pub-section {
+  display: none;
+}
+
+.pub-section.active {
+  display: block;
+}
 
 .section-title {
   font-family: 'Barlow Condensed', sans-serif;
@@ -344,4 +355,98 @@ body {
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
+}
+
+/* ==============================
+   STANDINGS TABLE
+================================ */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.standings-table th {
+  text-align: center;
+  padding: 8px 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.standings-table th:nth-child(2) {
+  text-align: left;
+}
+
+.standings-table td {
+  padding: 10px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.standings-table td:nth-child(2) {
+  text-align: left;
+}
+
+.standings-table tbody tr {
+  transition: background 0.15s;
+}
+
+.standings-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.standings-table .row-first td {
+  font-weight: 700;
+}
+
+.standings-table .row-first .rank {
+  background: var(--gold);
+  color: #111;
+}
+
+.rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--dark3);
+  color: var(--text-muted);
+}
+
+.team-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.pos {
+  color: var(--green-bright);
+}
+
+.neg {
+  color: var(--red);
 }
