@@ -1005,3 +1005,163 @@ body {
   color: var(--gold);
   font-size: 0.75rem;
 }
+
+/* ==============================
+   K.O. ADMIN
+================================ */
+.ko-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ko-match-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  gap: 10px;
+}
+
+.ko-match-card.finale-card {
+  border-color: var(--gold);
+}
+
+.ko-teams {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.ko-score {
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.ko-winner {
+  color: var(--green-bright);
+  font-weight: 700;
+}
+
+/* ==============================
+   FORMS
+================================ */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-group label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+input[type="text"],
+input[type="password"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+input[type="color"],
+textarea,
+select {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-family: 'Barlow', sans-serif;
+  font-size: 0.9rem;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--green-bright);
+}
+
+input[type="color"] {
+  padding: 4px;
+  height: 38px;
+  cursor: pointer;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+select {
+  cursor: pointer;
+}
+
+.input-sm {
+  padding: 5px 8px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+  width: auto;
+}
+
+input[type="date"].input-sm,
+input[type="time"].input-sm {
+  max-width: 130px;
+}
+
+input[type="text"].input-sm {
+  max-width: 90px;
+}
+
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.checkbox-label:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  accent-color: var(--green-bright);
+}
