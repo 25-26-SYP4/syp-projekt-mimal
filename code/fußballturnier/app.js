@@ -132,3 +132,47 @@ function renderCurrentTab() {
         case 'knockout': renderKnockoutAdmin(); break;
     }
 }
+
+// =====================
+//  EINSTELLUNGEN
+// =====================
+function renderSettings() {
+  const t = data.tournament;
+  document.getElementById('settings-form').innerHTML = `
+    <div class="form-group">
+      <label>Turniername</label>
+      <input type="text" id="s-name" value="${escHtml(t.name)}" placeholder="z.B. HTL Cup 2025">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Datum</label>
+        <input type="date" id="s-date" value="${t.date}">
+      </div>
+      <div class="form-group">
+        <label>Ort / Sportplatz</label>
+        <input type="text" id="s-location" value="${escHtml(t.location)}" placeholder="z.B. Schulsportplatz">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Kurzbeschreibung (optional)</label>
+      <textarea id="s-desc" rows="3" placeholder="Kurze Infos zum Turnier...">${escHtml(t.description)}</textarea>
+    </div>
+    <div class="form-group">
+      <label>Admin-PIN (aktuell gesetzt)</label>
+      <input type="password" id="s-pin" placeholder="Neuen PIN eingeben zum Ändern">
+    </div>
+    <button class="btn btn-primary" onclick="saveSettings()">💾 Speichern</button>
+  `;
+}
+
+function saveSettings() {
+  data.tournament.name        = document.getElementById('s-name').value.trim() || 'Turnier';
+  data.tournament.date        = document.getElementById('s-date').value;
+  data.tournament.location    = document.getElementById('s-location').value.trim();
+  data.tournament.description = document.getElementById('s-desc').value.trim();
+  const newPin = document.getElementById('s-pin').value.trim();
+  if (newPin) data.tournament.pin = newPin;
+  saveData();
+  document.getElementById('nav-title').textContent = data.tournament.name;
+  showToast('✅ Einstellungen gespeichert!');
+}
