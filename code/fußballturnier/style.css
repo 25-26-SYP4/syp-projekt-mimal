@@ -615,7 +615,7 @@ body {
 
 .bracket-match.finale {
   border-color: var(--gold);
-  box-shadow: 0 0 16px rgba(244,196,48,0.2);
+  box-shadow: 0 0 16px rgba(244, 196, 48, 0.2);
 }
 
 .bracket-team {
@@ -628,7 +628,9 @@ body {
   transition: background 0.15s;
 }
 
-.bracket-team:first-child { border-bottom: 1px solid var(--border); }
+.bracket-team:first-child {
+  border-bottom: 1px solid var(--border);
+}
 
 .bracket-team span:last-of-type,
 .bracket-team strong {
@@ -636,7 +638,10 @@ body {
   font-weight: 700;
 }
 
-.bracket-team.winner { background: rgba(45,106,79,0.25); color: var(--green-bright); }
+.bracket-team.winner {
+  background: rgba(45, 106, 79, 0.25);
+  color: var(--green-bright);
+}
 
 .winner-banner {
   margin-top: 20px;
@@ -700,11 +705,22 @@ body {
   white-space: nowrap;
 }
 
-.tab-btn:hover { color: var(--text); }
-.tab-btn.active { color: var(--green-bright); border-bottom-color: var(--green-bright); }
+.tab-btn:hover {
+  color: var(--text);
+}
 
-.tab-content { display: none; }
-.tab-content.active { display: block; }
+.tab-btn.active {
+  color: var(--green-bright);
+  border-bottom-color: var(--green-bright);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
 
 
 /* ==============================
@@ -729,7 +745,7 @@ body {
 /* ==============================
    TEAM CARDS
 ================================ */
-.team-card { }
+.team-card {}
 
 .team-card-header {
   display: flex;
@@ -739,16 +755,24 @@ body {
   flex-wrap: wrap;
 }
 
-.team-card-header strong { flex: 1; font-size: 1rem; }
+.team-card-header strong {
+  flex: 1;
+  font-size: 1rem;
+}
 
 .team-color-dot {
-  width: 14px; height: 14px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.2);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   flex-shrink: 0;
 }
 
-.card-actions { display: flex; gap: 6px; margin-left: auto; }
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
 
 .players-list {
   display: flex;
@@ -764,4 +788,83 @@ body {
   padding: 3px 10px;
   border-radius: 20px;
   color: var(--text-dim);
+}
+
+/* ==============================
+   GROUPS
+================================ */
+.group-teams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.group-team-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ==============================
+   MATCHES (ADMIN)
+================================ */
+.matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.match-row {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.match-row.played {
+  border-left: 3px solid var(--green-bright);
+}
+
+.match-teams {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.vs-badge {
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 50px;
+  text-align: center;
+}
+
+.match-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
 }
