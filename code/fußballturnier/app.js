@@ -380,3 +380,72 @@ function generateGroupMatches(groupId) {
     showToast(`✅ ${cnt} Spiele generiert!`);
 }
 
+
+// =====================
+//  SPIELPLAN (ADMIN)
+// =====================
+function renderScheduleAdmin() {
+    const c = document.getElementById('tab-schedule');
+    let html = '<div class="section-header"><h2>Spielplan bearbeiten</h2></div>';
+    html += '<p class="muted" style="margin-bottom:16px">Datum, Uhrzeit und Spielfeld pro Spiel eintragen.</p>';
+
+    // Gruppenspiele
+    data.groups.forEach(g => {
+        const matches = data.matches.filter(m => m.groupId === g.id);
+        html += `<div class="card"><h3>${escHtml(g.name)}</h3>`;
+        if (matches.length === 0) {
+            html += '<p class="muted">Keine Spiele. Bitte zuerst Spiele in der "Gruppen"-Ansicht generieren.</p>';
+        } else {
+            html += '<div class="matches-list">';
+            matches.forEach(m => {
+                const home = data.teams.find(t => t.id === m.homeId);
+                const away = data.teams.find(t => t.id === m.awayId);
+                html += matchRowHtml(m, home, away, false);
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+    });
+
+    // K.o.-Spiele
+    const koMatches = data.matches.filter(m => m.phase !== 'group');
+    if (koMatches.length > 0) {
+        html += '<div class="card"><h3>K.o.-Phase</h3><div class="matches-list">';
+        koMatches.forEach(m => {
+            const home = data.teams.find(t => t.id === m.homeId);
+            const away = data.teams.find(t => t.id === m.awayId);
+            html += matchRowHtml(m, home, away, true);
+        });
+        html += '</div></div>';
+    }
+
+    if (data.groups.length === 0 && koMatches.length === 0) {
+        html += '<p class="empty-state">Noch keine Spiele vorhanden. Erst Gruppen und Teams anlegen.</p>';
+    }
+
+    c.innerHTML = html;
+}
+
+function matchRowHtml(m, home, away, showRound) {
+    const score = m.played ? `${m.homeScore} : ${m.awayScore}` : 'vs';
+    return `
+    <div class="match-row ${m.played ? 'played' : ''}">
+      <div class="match-teams">
+        ${showRound && m.round ? `<span class="badge-round">${escHtml(m.round)}</span>` : ''}
+        <span class="team-name">${home ? escHtml(home.name) : '?'}</span>
+        <span class="vs-badge">${score}</span>
+        <span class="team-name">${away ? escHtml(away.name) : '?'}</span>
+      </div>
+      <div class="match-meta">
+        <input type="time" class="input-sm" value="${m.time}" onchange="updateMatch('${m.id}','time',this.value)" placeholder="Uhrzeit">
+        <input type="text" class="input-sm" value="${escHtml(m.field)}" onchange="updateMatch('${m.id}','field',this.value)" placeholder="Feld">
+      </div>
+    </div>
+  `;
+}
+
+function updateMatch(id, field, value) {
+    const match = data.matches.find(m => m.id === id);
+    if (match) { match[field] = value; saveData(); }
+}
+
