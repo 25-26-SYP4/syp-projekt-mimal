@@ -65,13 +65,28 @@ const DATA_DIR = path.join(__dirname, "database");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const MATCHES_FILE = path.join(DATA_DIR, "matches.json");
 const STATE_FILE = path.join(DATA_DIR, "state.json");
+// Storage for the current frontend (code/fußballturnier/app.js),
+// which uses the data model { tournament, teams, groups, matches }.
+const TOURNAMENT_FILE = path.join(DATA_DIR, "tournament-data.json");
 
 app.use(cors());
 app.use(express.json({ limit: "8mb" }));
 
-// Security headers
+// Security headers.
+// Note: the frontend (code/fußballturnier) uses inline onclick="..." handlers,
+// which the default CSP (script-src-attr 'none') blocks. Allow inline event
+// handlers so the buttons work, while keeping the rest of helmet's defaults.
 try {
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          "script-src-attr": ["'unsafe-inline'"],
+        },
+      },
+    })
+  );
 } catch (_e) {
   // helmet may not be installed in some dev setups
 }
@@ -116,6 +131,7 @@ if (!fs.existsSync(DATA_DIR)) {
 
 initFiles();
 seedDefaults();
+// seedTournament() is called after DEMO_TOURNAMENT is defined (see below).
 
 const editableKeys = new Set([
   "matches",
@@ -207,6 +223,63 @@ function seedDefaults() {
 
   writeJson(USERS_FILE, defaults);
 }
+
+// ============================================================================
+// TOURNAMENT DATA (frontend app.js model: { tournament, teams, groups, matches })
+// ============================================================================
+
+// Demo data so the app shows a populated tournament right away (presentation).
+const DEMO_TOURNAMENT = {
+  tournament: {
+    name: "HTL Cup 2025",
+    date: "2026-06-23",
+    location: "Sporthalle HTL",
+    description: "Das große Schul-Fußballturnier — Demo-Daten zum Präsentieren.",
+    pin: "1234",
+  },
+  teams: [
+    { id: "t1", name: "Die Adler", color: "#2d6a4f", players: ["Max Mustermann", "Tobias Huber", "Jonas Berger", "Felix Wagner", "Lukas Gruber"] },
+    { id: "t2", name: "Blitz United", color: "#1d4ed8", players: ["David Steiner", "Paul Mayer", "Elias Fischer", "Noah Bauer", "Simon Reiter"] },
+    { id: "t3", name: "FC Donnerschlag", color: "#dc2626", players: ["Leon Hofer", "Jakob Moser", "Samuel Lang", "Daniel Wolf", "Florian Eder"] },
+    { id: "t4", name: "Sturmtruppe", color: "#ea580c", players: ["Marcel Pichler", "Tim Brunner", "Lena Köhler", "Anna Wimmer", "Sarah Holzer"] },
+    { id: "t5", name: "Goldene Löwen", color: "#ca8a04", players: ["Julian Maier", "Fabian Auer", "Niklas Graf", "Moritz Kaiser", "Benedikt Lechner"] },
+    { id: "t6", name: "Eisbären", color: "#0891b2", players: ["Sebastian Ortner", "Philipp Reisinger", "Matteo Stadler", "Raphael Binder", "Vincent Hauser"] },
+  ],
+  groups: [
+    { id: "g1", name: "Gruppe A", teamIds: ["t1", "t2", "t3"] },
+    { id: "g2", name: "Gruppe B", teamIds: ["t4", "t5", "t6"] },
+  ],
+  matches: [
+    // Gruppe A
+    { id: "m1", groupId: "g1", phase: "group", round: null, homeId: "t1", awayId: "t2", date: "2026-06-23", time: "09:00", field: "Platz 1", homeScore: 2, awayScore: 1, played: true },
+    { id: "m2", groupId: "g1", phase: "group", round: null, homeId: "t1", awayId: "t3", date: "2026-06-23", time: "10:00", field: "Platz 1", homeScore: 3, awayScore: 3, played: true },
+    { id: "m3", groupId: "g1", phase: "group", round: null, homeId: "t2", awayId: "t3", date: "2026-06-23", time: "11:00", field: "Platz 1", homeScore: 0, awayScore: 2, played: true },
+    // Gruppe B
+    { id: "m4", groupId: "g2", phase: "group", round: null, homeId: "t4", awayId: "t5", date: "2026-06-23", time: "09:00", field: "Platz 2", homeScore: 1, awayScore: 1, played: true },
+    { id: "m5", groupId: "g2", phase: "group", round: null, homeId: "t4", awayId: "t6", date: "2026-06-23", time: "10:00", field: "Platz 2", homeScore: 4, awayScore: 0, played: true },
+    { id: "m6", groupId: "g2", phase: "group", round: null, homeId: "t5", awayId: "t6", date: "2026-06-23", time: "11:00", field: "Platz 2", homeScore: 2, awayScore: 2, played: true },
+    // Halbfinale (KO) — Sieger/Zweiter der Gruppen, ein Spiel bereits entschieden
+    { id: "m7", groupId: null, phase: "knockout", round: "Halbfinale", homeId: "t1", awayId: "t5", date: "2026-06-23", time: "13:00", field: "Platz 1", homeScore: 2, awayScore: 0, penaltyHome: null, penaltyAway: null, played: true },
+    { id: "m8", groupId: null, phase: "knockout", round: "Halbfinale", homeId: "t4", awayId: "t3", date: "2026-06-23", time: "13:45", field: "Platz 1", homeScore: null, awayScore: null, penaltyHome: null, penaltyAway: null, played: false },
+  ],
+};
+
+function seedTournament() {
+  if (!fs.existsSync(TOURNAMENT_FILE)) {
+    writeJson(TOURNAMENT_FILE, DEMO_TOURNAMENT);
+  }
+}
+
+function readTournament() {
+  try {
+    return JSON.parse(fs.readFileSync(TOURNAMENT_FILE, "utf8"));
+  } catch (_error) {
+    return DEMO_TOURNAMENT;
+  }
+}
+
+// Seed demo tournament now that DEMO_TOURNAMENT is initialized.
+seedTournament();
 
 function readJson(filePath) {
   try {
@@ -403,6 +476,7 @@ function resetDatabase() {
   ];
 
   writeJson(USERS_FILE, defaults);
+  writeJson(TOURNAMENT_FILE, DEMO_TOURNAMENT);
   writeJson(MATCHES_FILE, []);
   writeJson(
     STATE_FILE,
@@ -441,6 +515,54 @@ if (process.env.NODE_ENV !== "production") {
     }
   });
 }
+
+/**
+ * @swagger
+ * /api/tournament-data:
+ *   get:
+ *     summary: Get the full tournament data (frontend app.js model)
+ *     description: Returns the stored tournament object { tournament, teams, groups, matches }
+ *     responses:
+ *       200:
+ *         description: Tournament data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *   put:
+ *     summary: Replace the full tournament data
+ *     description: Stores the complete { tournament, teams, groups, matches } object sent by the frontend
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Saved
+ *       400:
+ *         description: Invalid body
+ */
+app.get("/api/tournament-data", (_req, res) => {
+  res.json(readTournament());
+});
+
+app.put("/api/tournament-data", (req, res) => {
+  const body = req.body;
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return res.status(400).json({ message: "Ungültige Turnierdaten." });
+  }
+  // Light validation: expected top-level shape from app.js
+  const safe = {
+    tournament: body.tournament || {},
+    teams: Array.isArray(body.teams) ? body.teams : [],
+    groups: Array.isArray(body.groups) ? body.groups : [],
+    matches: Array.isArray(body.matches) ? body.matches : [],
+  };
+  writeJson(TOURNAMENT_FILE, safe);
+  return res.json({ message: "Turnierdaten gespeichert." });
+});
 
 /**
  * @swagger

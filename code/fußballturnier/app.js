@@ -1,7 +1,18 @@
 // ============================================================
 //  SCHULTURNIER-MANAGER  —  app.js
-//  Alle Daten werden in localStorage gespeichert.
+//  Daten werden im Backend gespeichert (REST-API), mit
+//  localStorage als Offline-Fallback / Cache.
 // ============================================================
+
+// =====================
+//  BACKEND-ANBINDUNG
+// =====================
+// Wenn die Seite vom Backend (Port 3000) ausgeliefert wird, gleiche Origin
+// verwenden; bei Datei-/Live-Server-Vorschau das Backend auf Port 3000.
+const API_BASE = (location.protocol.startsWith('http') && location.port === '3000')
+    ? `${location.origin}/api`
+    : 'http://localhost:3000/api';
+let backendOnline = false;
 
 // =====================
 //  DEFAULT-DATEN
@@ -27,10 +38,41 @@ let currentAdminTab = 'teams';
 //  PERSISTENZ
 // =====================
 function saveData() {
+    // Lokaler Cache (Offline-Fallback) immer aktualisieren …
     localStorage.setItem('fussball_turnier_v2', JSON.stringify(data));
+    // … und im Backend speichern (fire-and-forget).
+    if (backendOnline) {
+        fetch(`${API_BASE}/tournament-data`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).catch(() => {
+            backendOnline = false;
+            showToast('⚠️ Backend nicht erreichbar – nur lokal gespeichert.');
+        });
+    }
 }
 
-function loadData() {
+async function loadData() {
+    // Zuerst versuchen, vom Backend zu laden …
+    try {
+        const res = await fetch(`${API_BASE}/tournament-data`);
+        if (res.ok) {
+            const remote = await res.json();
+            data = {
+                tournament: remote.tournament || JSON.parse(JSON.stringify(DEFAULT_DATA.tournament)),
+                teams: Array.isArray(remote.teams) ? remote.teams : [],
+                groups: Array.isArray(remote.groups) ? remote.groups : [],
+                matches: Array.isArray(remote.matches) ? remote.matches : []
+            };
+            backendOnline = true;
+            localStorage.setItem('fussball_turnier_v2', JSON.stringify(data));
+            return;
+        }
+    } catch (e) {
+        backendOnline = false;
+    }
+    // … sonst Offline-Fallback auf localStorage.
     const saved = localStorage.getItem('fussball_turnier_v2');
     if (saved) {
         try { data = JSON.parse(saved); } catch (e) { data = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
@@ -1133,8 +1175,8 @@ function toggleTheme() {
 // =====================
 //  INITIALISIERUNG
 // =====================
-document.addEventListener('DOMContentLoaded', () => {
-  loadData();
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadData();
 
   // Theme wiederherstellen
   if (localStorage.getItem('fussball_theme') === 'light') {

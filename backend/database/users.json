@@ -2,43 +2,36 @@
   {
     "id": 1,
     "username": "admin",
-    "password_hash": "$2a$10$WGkvfJ6A4/fF2mkgStwnxuoHwBnhgYwOclgkRIVk7OOp9RChIvNU2",
+    "password_hash": "$2a$10$f/Fhqt5ascoHd3.e6kDSsOdvKr8ks8Eg1gXHSeqM7txgRjYzLbBGW",
     "role": "admin",
-    "created_at": "2026-03-26T07:54:29.532Z"
+    "created_at": "2026-06-23T15:10:33.352Z"
   },
   {
     "id": 2,
     "username": "gast",
-    "password_hash": "$2a$10$0RvwAWAe2hor4hvQ2xb53uj3CPZBkOiWi9CBtnQfjIcUKTlfM/p06",
+    "password_hash": "$2a$10$5hBN6eIAdCRQGOjlJpiOkenFhrboa7ACmhJfDQgxj.ZkWdeFBSqJK",
     "role": "viewer",
-    "created_at": "2026-03-26T07:54:29.532Z"
+    "created_at": "2026-06-23T15:10:33.352Z"
   },
   {
     "id": 3,
     "username": "trainer",
-    "password_hash": "$2a$10$hERYQC9ERCNUgDdHsXLK0.WcsiK6SjuA9jWjI/EBniS6ypT4EyXy2",
+    "password_hash": "$2a$10$EuVkI9DMZ3OzXmqxf0g0ZunktCwG5xG3J0pfR7rYyoOSdxdMn4XAq",
     "role": "trainer",
-    "created_at": "2026-03-26T07:54:29.532Z"
+    "created_at": "2026-06-23T15:10:33.352Z"
   },
   {
     "id": 4,
     "username": "schiri",
-    "password_hash": "$2a$10$zDtQLD97dUWfDpJWrHpZJeAgqMoXDVghNQ7KwGylyBhgjIawiZQ1e",
+    "password_hash": "$2a$10$mxEX0nvQafCLCLnibVBtA.GVWPf1RN7TYodxQgYQtbrkxB.vkcMwC",
     "role": "referee",
-    "created_at": "2026-03-26T07:54:29.532Z"
+    "created_at": "2026-06-23T15:10:33.352Z"
   },
   {
     "id": 5,
-    "username": "alex",
-    "password_hash": "$2a$10$JH0K5nYqcOtu4nb5KDX6COfRYr8Sk2Az8Z8owt4ckHzXnpMVbcsOO",
+    "username": "user1",
+    "password_hash": "$2a$10$aTN833uvD.wILjeicoGQJ.86Sebi2f2pf4MaDw3dz0XSp2h1BY05y",
     "role": "viewer",
-    "created_at": "2026-03-26T08:47:21.566Z"
-  },
-  {
-    "id": 6,
-    "username": "toni",
-    "password_hash": "$2a$10$97KBH.jCPhM/BqbBDXj7pOPow.ZvB5qbF736aCHvO5DBxYB1Nyq5K",
-    "role": "referee",
-    "created_at": "2026-03-26T08:53:49.260Z"
+    "created_at": "2026-06-23T15:10:33.352Z"
   }
 ]
