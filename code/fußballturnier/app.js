@@ -7,11 +7,14 @@
 // =====================
 //  BACKEND-ANBINDUNG
 // =====================
-// Wenn die Seite vom Backend (Port 3000) ausgeliefert wird, gleiche Origin
-// verwenden; bei Datei-/Live-Server-Vorschau das Backend auf Port 3000.
-const API_BASE = (location.protocol.startsWith('http') && location.port === '3000')
-    ? `${location.origin}/api`
-    : 'http://localhost:3000/api';
+// Wenn die Seite von einem echten Server (lokal Port 3000 oder gehostet, z. B.
+// Render) ausgeliefert wird, die API der gleichen Origin verwenden. Nur bei
+// Datei-/Live-Server-Vorschau auf das lokale Backend (Port 3000) ausweichen.
+const isLocalPreview =
+    location.protocol === 'file:' ||
+    ((location.hostname === 'localhost' || location.hostname === '127.0.0.1') &&
+        location.port !== '3000');
+const API_BASE = isLocalPreview ? 'http://localhost:3000/api' : `${location.origin}/api`;
 let backendOnline = false;
 
 // =====================
